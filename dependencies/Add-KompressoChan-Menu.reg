@@ -18,7 +18,7 @@ Windows Registry Editor Version 5.00
 
 ; For directory backgrounds
 [HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoChan]
-@="Compress this folder with Kompresso-chan"
+@="Compress with Kompresso-chan"
 "Icon"="C:\\Program Files\\Kompresso-chan\\komchan.exe"
 
 [HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoChan\command]

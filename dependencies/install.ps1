@@ -28,6 +28,8 @@ $uninstallDestPath = Join-Path $kompressoChanDestDir "uninstall.ps1"
 $uninstallExeSrcPath = Join-Path $PSScriptRoot "..\uninstall.exe"
 $uninstallExeDestPath = Join-Path $kompressoChanDestDir "uninstall.exe"
 $contextMenuSrcPath = Join-Path $PSScriptRoot "Add-KompressoChan-Menu.reg"
+$regRemoveSrcPath = Join-Path $PSScriptRoot "Remove-KompressoChan-Menu.reg"
+$regRemoveDestPath = Join-Path $kompressoChanDestDir "Remove-KompressoChan-Menu.reg"
 
 Write-Host "--- Starting Installation ---`n" -ForegroundColor Cyan
 
@@ -96,6 +98,12 @@ if (Test-Path $kompressoChanSrcPath) {
         if (Test-Path $uninstallExeSrcPath) {
             Copy-Item -Path $uninstallExeSrcPath -Destination $uninstallExeDestPath -Force
             Write-Host "Uninstaller executable copied successfully." -ForegroundColor Gray
+        }
+
+        # Copy Remove-KompressoChan-Menu.reg if it exists
+        if (Test-Path $regRemoveSrcPath) {
+            Copy-Item -Path $regRemoveSrcPath -Destination $regRemoveDestPath -Force
+            Write-Host "Context menu removal script copied successfully." -ForegroundColor Gray
         }
     } catch {
         $installationResults.KompressoChan = "Error: $($_.Exception.Message)"
