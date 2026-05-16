@@ -9,10 +9,19 @@ param (
     [switch]$Help
 )
 
+$Version = "1.2.0"
+
 # Handle Help parameter
 if ($Help -or ($args -contains "--help")) {
     Write-Host -NoNewline "$([char]27)[2J$([char]27)[H"
-    Write-Host "  KOMPRESSO-CHAN - HELP GUIDE" -ForegroundColor Cyan
+    Write-Host "
+   __ __                                         
+  / //_/__  __ _  ___  _______ ___ ___ ___  ____ 
+ / ,< / _ \/  ' \/ _ \/ __/ -_|_-<(_-</ _ \/___/ 
+/_/|_|\___/_/_/_/ .__/_/  \__/___/___/\___/      
+               /_/         v$Version
+" -ForegroundColor Cyan
+    Write-Host "  HELP GUIDE" -ForegroundColor Cyan
     Write-Host "  ===========================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  Kompresso-chan is a powerful CLI and Context Menu tool for video compression."
@@ -45,7 +54,14 @@ if ($Help -or ($args -contains "--help")) {
 # Handle Uninstall parameter
 if ($Uninstall) {
     Write-Host -NoNewline "$([char]27)[2J$([char]27)[H"
-    Write-Host "  KOMPRESSO-CHAN - UNINSTALLER" -ForegroundColor Red
+    Write-Host "
+   __ __                                         
+  / //_/__  __ _  ___  _______ ___ ___ ___  ____ 
+ / ,< / _ \/  ' \/ _ \/ __/ -_|_-<(_-</ _ \/___/ 
+/_/|_|\___/_/_/_/ .__/_/  \__/___/___/\___/      
+               /_/         v$Version
+" -ForegroundColor Cyan
+    Write-Host "  UNINSTALLER" -ForegroundColor Red
     Write-Host "  ============================" -ForegroundColor Red
     Write-Host ""
     Write-Host "  This will remove Kompresso-chan and its context menu from your system."
@@ -53,14 +69,13 @@ if ($Uninstall) {
     Write-Host -NoNewline "  "
     $confirm = Read-Host "Are you sure you want to uninstall? [y/N]"
     if ($confirm.ToLower() -eq "y") {
-        $uninstaller = "C:\Program Files\Kompresso-chan\uninstall.exe"
+        $uninstaller = "C:\Program Files\Kompresso-chan\uninstall.ps1"
         if (Test-Path $uninstaller) {
             Write-Host "  Launching uninstaller..." -ForegroundColor Gray
-            Start-Process $uninstaller -Verb RunAs
+            Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$uninstaller`"" -Verb RunAs
             exit
         } else {
             Write-Host "  Error: Uninstaller not found at $uninstaller" -ForegroundColor Red
-            Write-Host "  Please run the uninstall.ps1 script from the source folder instead." -ForegroundColor Yellow
         }
     } else {
         Write-Host "  Uninstallation cancelled."
@@ -69,6 +84,14 @@ if ($Uninstall) {
 }
 
 Write-Host -NoNewline "$([char]27)[2J$([char]27)[H"
+Write-Host "
+   __ __                                         
+  / //_/__  __ _  ___  _______ ___ ___ ___  ____ 
+ / ,< / _ \/  ' \/ _ \/ __/ -_|_-<(_-</ _ \/___/ 
+/_/|_|\___/_/_/_/ .__/_/  \__/___/___/\___/      
+               /_/         v$Version
+" -ForegroundColor Cyan
+
 $handbrake = "C:\Program Files\HandBrake\HandBrakeCLI.exe"
 
 # Check HandBrake exists, or try to find it in PATH

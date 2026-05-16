@@ -17,15 +17,17 @@ $installationResults = @{
 # Define Paths
 $handbrakeDestDir = "C:\Program Files\HandBrake"
 $handbrakeCliPath = Join-Path $handbrakeDestDir "HandBrakeCLI.exe"
-$handbrakeSrcDir = Join-Path $PSScriptRoot "dependencies\HandBrake"
+$handbrakeSrcDir = Join-Path $PSScriptRoot "HandBrake"
 
 $kompressoChanDestDir = "C:\Program Files\Kompresso-chan"
 $kompressoChanExeName = "Kompresso-chan.exe"
 $kompressoChanDestPath = Join-Path $kompressoChanDestDir $kompressoChanExeName
-$kompressoChanSrcPath = Join-Path $PSScriptRoot "dependencies\$kompressoChanExeName"
-$uninstallSrcPath = Join-Path $PSScriptRoot "uninstall.exe"
-$uninstallDestPath = Join-Path $kompressoChanDestDir "uninstall.exe"
-$contextMenuSrcPath = Join-Path $PSScriptRoot "dependencies\Add-KompressoChan-Menu.reg"
+$kompressoChanSrcPath = Join-Path $PSScriptRoot "$kompressoChanExeName"
+$uninstallSrcPath = Join-Path $PSScriptRoot "uninstall.ps1"
+$uninstallDestPath = Join-Path $kompressoChanDestDir "uninstall.ps1"
+$uninstallExeSrcPath = Join-Path $PSScriptRoot "..\uninstall.exe"
+$uninstallExeDestPath = Join-Path $kompressoChanDestDir "uninstall.exe"
+$contextMenuSrcPath = Join-Path $PSScriptRoot "Add-KompressoChan-Menu.reg"
 
 Write-Host "--- Starting Installation ---`n" -ForegroundColor Cyan
 
@@ -84,12 +86,16 @@ if (Test-Path $kompressoChanSrcPath) {
             $installationResults.KompressoChan = "Success"
         }
 
-        # Copy uninstall.exe if it exists
+        # Copy uninstall.ps1 if it exists
         if (Test-Path $uninstallSrcPath) {
             Copy-Item -Path $uninstallSrcPath -Destination $uninstallDestPath -Force
-            Write-Host "Uninstaller copied successfully." -ForegroundColor Gray
-        } else {
-            Write-Host "Uninstaller source not found, skipping." -ForegroundColor Gray
+            Write-Host "Uninstaller script copied successfully." -ForegroundColor Gray
+        }
+
+        # Copy uninstall.exe if it exists
+        if (Test-Path $uninstallExeSrcPath) {
+            Copy-Item -Path $uninstallExeSrcPath -Destination $uninstallExeDestPath -Force
+            Write-Host "Uninstaller executable copied successfully." -ForegroundColor Gray
         }
     } catch {
         $installationResults.KompressoChan = "Error: $($_.Exception.Message)"

@@ -1,7 +1,13 @@
 # Ensure the script is running with Administrator privileges
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Host "Requesting Administrator privileges..." -ForegroundColor Cyan
-    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    try {
+        Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs -ErrorAction Stop
+    } catch {
+        Write-Host "Failed to request Administrator privileges: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Please run this script as Administrator manually."
+        Read-Host "Press Enter to exit..."
+    }
     exit
 }
 
@@ -19,12 +25,36 @@ $handbrakeDestDir = "C:\Program Files\HandBrake"
 $handbrakeCliPath = Join-Path $handbrakeDestDir "HandBrakeCLI.exe"
 
 $kompressoChanDestDir = "C:\Program Files\Kompresso-chan"
-$regRemovePath = Join-Path $PSScriptRoot "dependencies\Remove-KompressoChan-Menu.reg"
+$regRemovePath = Join-Path $PSScriptRoot "Remove-KompressoChan-Menu.reg"
 
 Write-Host "--- Starting Uninstallation ---`n" -ForegroundColor Cyan
 
+# 0. Stop Running Processes
+Write-Host "[Step 0/6] Stopping running processes..." -ForegroundColor White
+$processesToStop = @("komchan", "HandBrakeCLI", "Kompresso-chan")
+$processesStopped = 0
+foreach ($procName in $processesToStop) {
+    # Find processes, excluding the current uninstaller process itself
+    $procs = Get-Process -Name $procName -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $PID }
+    if ($procs) {
+        Write-Host "Found running process: $procName. Stopping..." -ForegroundColor Yellow
+        try {
+            $procs | Stop-Process -Force -ErrorAction Stop
+            Write-Host "Successfully stopped $procName." -ForegroundColor Gray
+            $processesStopped++
+        } catch {
+            Write-Host "Failed to stop ${procName}: $($_.Exception.Message)" -ForegroundColor Red
+        }
+    }
+}
+if ($processesStopped -gt 0) {
+    Write-Host "All identified processes stopped. Waiting for system to release files..." -ForegroundColor Gray
+    Start-Sleep -Seconds 1
+}
+Write-Host "Done checking processes.`n" -ForegroundColor Gray
+
 # 1. Remove Context Menu
-Write-Host "[Step 1/5] Removing Windows Context Menu..." -ForegroundColor White
+Write-Host "[Step 1/6] Removing Windows Context Menu..." -ForegroundColor White
 if (Test-Path $regRemovePath) {
     try {
         $process = Start-Process regedit.exe -ArgumentList "/s `"$regRemovePath`"" -Wait -PassThru
@@ -47,7 +77,7 @@ if (Test-Path $regRemovePath) {
 }
 
 # 2. Remove Desktop Shortcut
-Write-Host "[Step 2/5] Removing Desktop shortcut..." -ForegroundColor White
+Write-Host "[Step 2/6] Removing Desktop shortcut..." -ForegroundColor White
 try {
     $DesktopPath = [Environment]::GetFolderPath("Desktop")
     if (-not $DesktopPath) { $DesktopPath = Join-Path $env:USERPROFILE "Desktop" }
@@ -66,7 +96,7 @@ try {
 }
 
 # 3. Remove from System PATH
-Write-Host "[Step 3/5] Removing from System PATH..." -ForegroundColor White
+Write-Host "[Step 3/6] Removing from System PATH..." -ForegroundColor White
 try {
     $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
     if ($currentPath -like "*$kompressoChanDestDir*") {
@@ -85,7 +115,7 @@ try {
 }
 
 # 4. Remove Kompresso-chan Files
-Write-Host "[Step 4/5] Removing Kompresso-chan files..." -ForegroundColor White
+Write-Host "[Step 4/6] Removing Kompresso-chan files..." -ForegroundColor White
 try {
     if (Test-Path $kompressoChanDestDir) {
         Remove-Item -Path $kompressoChanDestDir -Recurse -Force
@@ -100,7 +130,7 @@ try {
 }
 
 # 5. Remove HandBrakeCLI (Keep GUI)
-Write-Host "[Step 5/5] Removing HandBrakeCLI..." -ForegroundColor White
+Write-Host "[Step 5/6] Removing HandBrakeCLI..." -ForegroundColor White
 try {
     if (Test-Path $handbrakeCliPath) {
         Remove-Item -Path $handbrakeCliPath -Force
