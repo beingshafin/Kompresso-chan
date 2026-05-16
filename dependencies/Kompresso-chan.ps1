@@ -37,7 +37,8 @@ if ($Help -or ($args -contains "--help")) {
     Write-Host "    If you select multiple items, they will all be queued for batch processing."
     Write-Host ""
     Write-Host "  FEATURES:" -ForegroundColor White
-    Write-Host "    - Multiple Presets: Choose from 1080p and 720p with different quality levels."
+    Write-Host "    - Multiple Presets: 24 options covering 4K, 1080p, 720p, 576p, and 480p."
+    Write-Host ""
     Write-Host "    - Processing Modes:"
     Write-Host "        1. Replace: Overwrite the original file with the compressed version."
     Write-Host "        2. Cascade: Save as 'original_kompressochan.mp4' in the same folder."
@@ -108,64 +109,50 @@ if (!(Test-Path $handbrake)) {
 #  PRESET MENU
 # ---------------------------------------------------------------
 $presets = @(
-    [PSCustomObject]@{
-        Id          = 1
-        Label       = "1080p - Fast"
-        FullName    = "1080p - Fast (Very Fast 1080p30)"
-        Preset      = "Very Fast 1080p30"
-        OutputPct   = "~45% - 65%"
-        AvgFPS      = "373"
-        CompressPct = 45
-    },
-    [PSCustomObject]@{
-        Id          = 2
-        Label       = "1080p - Balanced"
-        FullName    = "1080p - Balanced (Fast 1080p30)"
-        Preset      = "Fast 1080p30"
-        OutputPct   = "~50% - 89%"
-        AvgFPS      = "260"
-        CompressPct = 30
-    },
-    [PSCustomObject]@{
-        Id          = 3
-        Label       = "1080p - Quality"
-        FullName    = "1080p - Quality (HQ 1080p30 Surround)"
-        Preset      = "HQ 1080p30 Surround"
-        OutputPct   = "~60% - 172%"
-        AvgFPS      = "217"
-        CompressPct = 0
-    },
-    [PSCustomObject]@{
-        Id          = 5
-        Label       = "720p - Fast"
-        FullName    = "720p - Fast (Very Fast 720p30)"
-        Preset      = "Very Fast 720p30"
-        OutputPct   = "~40% - 46%"
-        AvgFPS      = "463"
-        CompressPct = 57
-    },
-    [PSCustomObject]@{
-        Id          = 6
-        Label       = "720p - Quality"
-        FullName    = "720p - Quality (HQ 720p30 Surround)"
-        Preset      = "HQ 720p30 Surround"
-        OutputPct   = "~50% - 139%"
-        AvgFPS      = "291"
-        CompressPct = 10
-    }
+    # --- VERY FAST ---
+    [PSCustomObject]@{ Id = 1;  Label = "4K - Very Fast AV1";   Preset = "Very Fast 2160p60 4K AV1"; OutputPct = "~40-60%"; AvgFPS = "120+"; CompressPct = 50 },
+    [PSCustomObject]@{ Id = 2;  Label = "4K - Very Fast HEVC";  Preset = "Very Fast 2160p60 4K MKV HEVC"; OutputPct = "~45-65%"; AvgFPS = "110+"; CompressPct = 45 },
+    [PSCustomObject]@{ Id = 3;  Label = "1080p - Very Fast";    Preset = "Very Fast 1080p30"; OutputPct = "~45-65%"; AvgFPS = "370+"; CompressPct = 45 },
+    [PSCustomObject]@{ Id = 4;  Label = "720p - Very Fast";     Preset = "Very Fast 720p30"; OutputPct = "~40-46%"; AvgFPS = "460+"; CompressPct = 57 },
+    [PSCustomObject]@{ Id = 5;  Label = "576p - Very Fast";     Preset = "Very Fast 576p25"; OutputPct = "~35-45%"; AvgFPS = "550+"; CompressPct = 60 },
+    [PSCustomObject]@{ Id = 6;  Label = "480p - Very Fast";     Preset = "Very Fast 480p30"; OutputPct = "~30-40%"; AvgFPS = "600+"; CompressPct = 65 },
+    
+    # --- FAST ---
+    [PSCustomObject]@{ Id = 7;  Label = "4K - Fast AV1";        Preset = "Fast 2160p60 4K AV1"; OutputPct = "~50-70%"; AvgFPS = "90+"; CompressPct = 40 },
+    [PSCustomObject]@{ Id = 8;  Label = "4K - Fast HEVC";       Preset = "Fast 2160p60 4K MKV HEVC"; OutputPct = "~55-75%"; AvgFPS = "80+"; CompressPct = 35 },
+    [PSCustomObject]@{ Id = 9;  Label = "1080p - Fast (Default)"; Preset = "Fast 1080p30"; OutputPct = "~50-89%"; AvgFPS = "260+"; CompressPct = 30 },
+    [PSCustomObject]@{ Id = 10; Label = "720p - Fast";          Preset = "Fast 720p30"; OutputPct = "~45-55%"; AvgFPS = "350+"; CompressPct = 40 },
+    [PSCustomObject]@{ Id = 11; Label = "576p - Fast";          Preset = "Fast 576p25"; OutputPct = "~40-50%"; AvgFPS = "450+"; CompressPct = 45 },
+    [PSCustomObject]@{ Id = 12; Label = "480p - Fast";          Preset = "Fast 480p30"; OutputPct = "~35-45%"; AvgFPS = "500+"; CompressPct = 50 },
+
+    # --- HQ ---
+    [PSCustomObject]@{ Id = 13; Label = "4K - HQ AV1 Surround";  Preset = "HQ 2160p60 4K AV1 Surround"; OutputPct = "~60-80%"; AvgFPS = "60+"; CompressPct = 20 },
+    [PSCustomObject]@{ Id = 14; Label = "4K - HQ HEVC Surround"; Preset = "HQ 2160p60 4K MKV HEVC Surround"; OutputPct = "~65-85%"; AvgFPS = "50+"; CompressPct = 15 },
+    [PSCustomObject]@{ Id = 15; Label = "1080p - HQ Surround";   Preset = "HQ 1080p30 Surround"; OutputPct = "~60-172%"; AvgFPS = "210+"; CompressPct = 5 },
+    [PSCustomObject]@{ Id = 16; Label = "720p - HQ Surround";    Preset = "HQ 720p30 Surround"; OutputPct = "~50-139%"; AvgFPS = "290+"; CompressPct = 10 },
+    [PSCustomObject]@{ Id = 17; Label = "576p - HQ Surround";    Preset = "HQ 576p25 Surround"; OutputPct = "~45-120%"; AvgFPS = "350+"; CompressPct = 12 },
+    [PSCustomObject]@{ Id = 18; Label = "480p - HQ Surround";    Preset = "HQ 480p30 Surround"; OutputPct = "~40-110%"; AvgFPS = "400+"; CompressPct = 15 },
+
+    # --- SUPER HQ ---
+    [PSCustomObject]@{ Id = 19; Label = "4K - Super HQ AV1";     Preset = "Super HQ 2160p60 4K AV1 Surround"; OutputPct = "~70-90%"; AvgFPS = "30+"; CompressPct = 10 },
+    [PSCustomObject]@{ Id = 20; Label = "4K - Super HQ HEVC";    Preset = "Super HQ 2160p60 4K MKV HEVC Surround"; OutputPct = "~75-95%"; AvgFPS = "25+"; CompressPct = 5 },
+    [PSCustomObject]@{ Id = 21; Label = "1080p - Super HQ";      Preset = "Super HQ 1080p30 Surround"; OutputPct = "~80-150%"; AvgFPS = "150+"; CompressPct = 0 },
+    [PSCustomObject]@{ Id = 22; Label = "720p - Super HQ";       Preset = "Super HQ 720p30 Surround"; OutputPct = "~70-130%"; AvgFPS = "200+"; CompressPct = 0 },
+    [PSCustomObject]@{ Id = 23; Label = "576p - Super HQ";       Preset = "Super HQ 576p25 Surround"; OutputPct = "~65-120%"; AvgFPS = "250+"; CompressPct = 0 },
+    [PSCustomObject]@{ Id = 24; Label = "480p - Super HQ";       Preset = "Super HQ 480p30 Surround"; OutputPct = "~60-110%"; AvgFPS = "300+"; CompressPct = 0 }
 )
 
 Write-Host ""
 Write-Host ""
 Write-Host "  KOMPRESSO-CHAN - SELECT A PRESET"
 Write-Host ""
-Write-Host ("  {0,-3}  {1,-50}  {2,-14}  {3}" -f "#", "Preset (Full Name)", "Output %", "Avg FPS")
-Write-Host ("  {0,-3}  {1,-50}  {2,-14}  {3}" -f ("-"*3), ("-"*50), ("-"*14), ("-"*7))
+Write-Host ("  {0,-3}  {1,-40}  {2,-14}  {3}" -f "#", "Preset Label", "Output %", "Avg FPS")
+Write-Host ("  {0,-3}  {1,-40}  {2,-14}  {3}" -f ("-"*3), ("-"*40), ("-"*14), ("-"*7))
 
 foreach ($p in $presets) {
-    Write-Host ("  {0,-3}  {1,-50}  {2,-14}  {3}" -f `
+    Write-Host ("  {0,-3}  {1,-40}  {2,-14}  {3}" -f `
         $p.Id,
-        $p.FullName,
+        $p.Label,
         $p.OutputPct,
         $p.AvgFPS
     )
@@ -187,7 +174,7 @@ do {
     }
 } while (-not $selectedPreset)
 
-Write-Host "  Selected : $($selectedPreset.FullName)"
+Write-Host "  Selected : $($selectedPreset.Label)"
 Write-Host ""
 
 # ---------------------------------------------------------------
@@ -356,7 +343,7 @@ if ($script:inputListPath) {
 
 $settingsHeader = @"
 // settings
-Chosen Preset  :  $($selectedPreset.FullName)
+Chosen Preset  :  $($selectedPreset.Label)
 Mode           :  $modeLabel
 Start Time     :  $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 "@
@@ -475,7 +462,7 @@ foreach ($task in $tasks) {
                 if ($createFolderLogs) {
                     $folderHeader = @"
 // settings
-Chosen Preset  :  $($selectedPreset.FullName)
+Chosen Preset  :  $($selectedPreset.Label)
 Mode           :  $modeLabel
 Start Time     :  $($now.ToString("yyyy-MM-dd HH:mm:ss"))
 

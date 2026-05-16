@@ -15,7 +15,7 @@
   - **Cascade**: Creates a compressed version alongside the original (e.g., `video_kompressochan.mp4`).
   - **Mirror**: Recreates an entire folder structure, copying non-video assets and compressing all media.
 - **📊 Professional Logging**: Automatic generation of session logs showing compression ratios, time taken, and total disk space saved.
-- **⚡ Performance Presets**: Curated HandBrake presets optimized for different resolutions and quality needs.
+- **⚡ Performance Presets**: 24 curated HandBrake presets ranging from 4K AV1/HEVC to mobile-friendly 480p, optimized for speed and quality.
 - **😴 Post-Task Automation**: Optional system shutdown after long compression queues.
 - **💻 Native CLI**: Full terminal support via the `komchan` command.
 
