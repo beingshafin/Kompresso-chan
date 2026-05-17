@@ -1,10 +1,10 @@
 # 🎬 Kompresso-chan
-<p>
-  <img src="dependencies/Assets/kompresso-chan.png" alt="Kompresso-chan Banner" width="200">
-</p>
+
+<img src="dependencies/Assets/kompresso-chan.png" alt="Kompresso-chan Banner" width="200" align="left" style="margin-right: 15px; margin-bottom: 10px;">
 
 **Kompresso-chan** is a professional, high-performance video compression utility for Windows. Designed to streamline your media workflow, it acts as a robust wrapper around the industry-standard **HandBrakeCLI**, offering seamless context-menu integration, smart batch processing, and detailed analytics.
 
+<br clear="left">
 
 ---
 
@@ -114,7 +114,7 @@ Kompresso-chan doesn't just compress; it tracks your efficiency. It generates tw
 ### 📈 Console Session Summary
 At the end of a compression batch, a clean, detailed overview of the saved disk space is displayed:
 <p>
-  <img src="dependencies/Assets/summary.png" alt="Console Summary Output" width="500">
+  <img src="dependencies/Assets/summary.png" alt="Console Summary Output" width="400">
 </p>
 
 ---
