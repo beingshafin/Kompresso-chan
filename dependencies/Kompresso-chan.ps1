@@ -9,7 +9,7 @@ param (
     [switch]$Help
 )
 
-$Version = "1.2.0"
+$Version = "1.0.0-alpha"
 
 # Handle Help parameter
 if ($Help -or ($args -contains "--help")) {

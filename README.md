@@ -1,139 +1,140 @@
 # 🎬 Kompresso-chan
 
-<img src="dependencies/Assets/kompresso-chan.png" alt="Kompresso-chan Banner" width="120" align="left" style="margin-right: 15px; margin-bottom: 10px;">
+<img src="dependencies/Assets/kompresso-chan.png" alt="Kompresso-chan Banner" width="200" align="left" style="margin-right: 15px; margin-bottom: 10px;">
 
-**Kompresso-chan** is a professional, high-performance video compression utility for Windows. Designed to streamline your media workflow, it acts as a robust wrapper around the industry-standard **HandBrakeCLI**, offering seamless context-menu integration, smart batch processing, and detailed analytics.
+**Kompresso-chan** is a video compressing utility for Windows I built to solve a simple but frustrating problem: my hard drive was constantly running out of space, and I was tired of opening heavy, complex video software just to downscale raw screen recordings. I wanted a fast, lightweight way to batch-compress files directly from my Windows Explorer context menu. To do that, I cooked up this tool as a PowerShell-based wrapper around the legendary **HandBrakeCLI** engine. Instead of hogging system resources, it lets you right-click any video file or folder, choose from 24 carefully optimized presets (supporting modern codecs like AV1, HEVC, and H.264), and let it run cleanly in the background. It shrunk my own raw captures and media folders by up to 90% while keeping them looking great, so I decided to package it up with a simple installer for anyone else looking to reclaim their disk space!
 
 <br clear="left">
 
 ---
 
-## ✨ Features at a Glance
+## ✨ Features I Packed Into It
 
-- **🚀 Explorer Integration**: Right-click any video file or folder to start compressing instantly.
-- **📂 Bulk Processing**: Queue dozens of files or entire directory trees with one click.
-- **🛠️ Intelligent Workflow Modes**:
-  - **Replace**: Direct in-place replacement of original files.
-  - **Cascade**: Creates a compressed version alongside the original (e.g., `video_kompressochan.mp4`).
-  - **Mirror**: Recreates an entire folder structure, copying non-video assets and compressing all media.
-- **📊 Professional Logging**: Automatic generation of session logs showing compression ratios, time taken, and total disk space saved.
-- **⚡ Performance Presets**: 24 curated HandBrake presets ranging from 4K AV1/HEVC to mobile-friendly 480p, optimized for speed and quality.
-- **😴 Post-Task Automation**: Optional system shutdown after long compression queues.
-- **💻 Native CLI**: Full terminal support via the `komchan` command.
+Here are the key things I wanted to make sure the tool handles well:
+
+- **🚀 Context Menu Integration**: You can select any video file or folder, right-click, and select **"Compress with Kompresso-chan"** to start instantly.
+- **📂 Bulk Processing**: I made sure it can handle entire directory trees or dozens of selected files at once without breaking a sweat.
+- **🛠️ Three Intelligent Workflow Modes**:
+  - **Replace**: Direct in-place replacement of your original files (perfect for maximizing space).
+  - **Cascade**: Creates a compressed copy alongside the original file with a `_kompressochan` suffix so you can compare quality.
+  - **Mirror**: Recreates an entire folder structure, compressing video assets while copying all non-video files (images, subtitles, etc.) completely intact.
+- **📊 Logging & Summaries**: Automatically generates session logs showing compression ratios, time elapsed, and total disk space saved.
+- **⚡ 24 Performance Presets**: I pre-configured 24 HandBrake presets ranging from 4K AV1/HEVC all the way down to mobile-friendly 480p, optimized for speed and visual quality.
+- **😴 Post-Task Auto-Shutdown**: An optional setting to automatically shut down your PC after a long overnight queue finishes.
+- **💻 Native CLI Support**: If you prefer terminals like I do, you can run the compression directly via the global `komchan` command.
 
 ---
 
-## 📥 Installation Guide
+## 📥 How to Install It
 
-Kompresso-chan is designed to be portable and easy to set up. Follow these steps to install it on your Windows machine:
+I wanted to make the setup as frictionless as possible, so I built simple C-based wrappers to handle the heavy lifting:
 
-### Method 1: The Easy Way (Recommended)
-1. **Download/Clone** this repository to a folder where you want it to live (e.g., `C:\Tools\Kompresso-chan`).
-2. Locate `install.exe` in the root folder.
+### Method 1: The Easiest Way (Recommended)
+1. **Download/Clone** this repository to a folder of your choice (e.g., `C:\Tools\Kompresso-chan`).
+2. Find `install.exe` in the root folder.
 3. **Right-click `install.exe`** and select **Run as Administrator**.
-4. Follow the on-screen instructions. The installer will automatically:
-   - Deploy HandBrakeCLI.
-   - Configure the `komchan` system command.
-   - Add the context menu entries.
-   - Create a desktop shortcut.
+4. The installer will automatically:
+   - Download/deploy HandBrakeCLI if it's missing.
+   - Configure the global `komchan` terminal command.
+   - Set up the right-click context menu integrations.
+   - Place a handy desktop shortcut for drag-and-drop batching.
 
-### Method 2: PowerShell (Manual)
-1. Open PowerShell as an **Administrator**.
-2. Navigate to the `dependencies` folder.
-3. Run the installation script:
+### Method 2: Manual PowerShell Setup
+1. Open PowerShell as **Administrator**.
+2. Navigate into the `dependencies` directory.
+3. Run the installer script directly:
    ```powershell
    Set-ExecutionPolicy Bypass -Scope Process -Force; .\install.ps1
    ```
 
 > [!NOTE]
-> You may need to restart your terminal or Windows Explorer for the `komchan` command and context menu to appear globally.
+> You might need to restart Windows Explorer or your open terminal windows for the context menu and global `komchan` command to load.
 
 ---
 
-## 🚀 How to Use
+## 🚀 How I Use It
 
-### 1. Using the Context Menu
-This is the fastest way to compress videos:
-- **Single Item**: Right-click an `.mp4` file or a folder and select **Compress with Kompresso-chan**.
-- **Multiple Items**: Select multiple files/folders, right-click, and choose the menu option. They will be added to a single processing session.
+### 1. The Right-Click Menu
+This is my everyday go-to:
+- Select one or more files/folders, right-click, and choose **Compress with Kompresso-chan**.
+- A custom interactive prompt will pop up asking you to pick your favorite preset and execution mode.
+
 <p>
   <img src="dependencies/Assets/presets.png" alt="Preset Selection Screen" width="700">
 </p>
 
-### 2. Using the Command Line (CLI)
-Open any terminal (CMD, PowerShell, or Windows Terminal) and use the `komchan` command:
+### 2. The Terminal (CLI)
+For quick single commands, open any shell (CMD, PowerShell, or Windows Terminal) and type:
 ```powershell
-# Compress a specific file
+# Compress a single video file
 komchan "D:\Movies\MyVideo.mp4"
 
-# Compress an entire folder
+# Queue up a whole folder
 komchan "D:\Recordings"
 
-# Show help and usage guide
+# View my help and usage documentation
 komchan --help
 ```
 
-### 3. Using a Path List (.txt)
-For advanced batching, create a `.txt` file containing absolute paths to files or folders (one per line). Drag and drop this text file onto the Kompresso-chan shortcut or pass it to the CLI:
+### 3. Drag-and-Drop Batch Lists
+For massive batch runs, I usually create a simple `.txt` file listing absolute file paths (one per line) and then drag-and-drop the file directly onto the desktop shortcut:
 ```powershell
-komchan "C:\Users\You\Desktop\batch_list.txt"
+komchan "C:\Users\You\Desktop\my_batch_list.txt"
 ```
 
-### 🖥️ Live Processing Output
-Watch real-time dynamic statistics, queue progress, and HandBrake CLI output as Kompresso-chan runs:
+### 🖥️ Interactive Progress HUD
+When running, the console shows a live overview of current statistics, total queue progress, and HandBrake's progress updates:
 <p>
   <img src="dependencies/Assets/live-update.png" alt="Live Output Screen" width="700">
 </p>
 
 ---
 
-## 🛠️ Processing Modes Explained
+## 🛠️ The 3 Workflow Modes Explained
 
-When you start a session, you will be prompted to choose a mode:
+To cover different needs, I built three distinct ways to handle files:
 
-| Mode | Behavior | Best For... |
+| Mode | What it does | Why I use it |
 | :--- | :--- | :--- |
-| **1. Replace** | Overwrites the original file with the compressed version. | Saving space when you don't need the original high-bitrate files. |
-| **2. Cascade** | Saves a new file with the `_kompressochan` suffix in the same folder. | Comparing quality or keeping a backup of the original. |
-| **3. Mirror** | Recreates the selected folder's structure in a new directory named `Folder_kompressochan`. | Bulk processing an entire library while preserving organization and non-video files (subtitles, images, etc.). |
+| **1. Replace** | Overwrites the original file with the compressed version. | When I just want to save raw disk space on long game captures and don't care about the original bitrates. |
+| **2. Cascade** | Saves the compressed file as `filename_kompressochan.mp4` in the same directory. | When I want to compare quality side-by-side or keep the original as a backup. |
+| **3. Mirror** | Recreates your source folder tree in a new directory named `Folder_kompressochan`. | When I want to compress an entire library of courses/shows while keeping subfolders, subtitles, and images untouched. |
 
 ---
 
-## 📊 Logging & Analytics
+## 📊 Analytics & Saving Logs
 
-Kompresso-chan doesn't just compress; it tracks your efficiency. It generates two kinds of logs depending on how it was run:
-- **Folder Log (`compression_log.txt`)**: A static log generated in the target directory (or mirror folder).
-- **Session Log (`session_compression_log_YYYY-M-D-HH.mm.ss.txt`)**: A timestamped log generated next to the input list file whenever you process a batch via a `.txt` list.
+I love seeing how much space I've reclaimed, so I built two logging formats depending on how the session is run:
+- **Folder Log (`compression_log.txt`)**: A static log saved directly in the destination folder.
+- **Session Log (`session_compression_log_YYYY-M-D-HH.mm.ss.txt`)**: A timestamped log created next to your batch list file when using `.txt` inputs.
 
-**The logs include:**
-- Selected Preset and Mode.
-- Per-file status (Success/Fail) and time taken.
-- **Final Summary**: Total space saved (MB) and compression percentage.
-- **Last Undone Job** (Session Log only): If a session is interrupted, it logs the last file that wasn't completed.
+**Each log documents:**
+- The selected preset and mode.
+- Success/Failure status and elapsed time for each file.
+- **Final Summary**: Absolute disk space saved in MB/GB and compression ratio percentage.
+- **Interrupted Session Recovery**: If a long session gets interrupted, it prints the last incomplete file so you can resume exactly where you left off.
 
 ### 📈 Console Session Summary
-At the end of a compression batch, a clean, detailed overview of the saved disk space is displayed:
+At the end of each run, it prints a clean breakdown of the total space saved to keep you updated:
 <p>
   <img src="dependencies/Assets/summary.png" alt="Console Summary Output" width="400">
 </p>
 
 ---
 
-## 📤 Uninstallation Guide
+## 📤 How to Uninstall It
 
-To completely remove Kompresso-chan from your system:
-
-1. **Run Uninstaller**:
-   - Right-click `uninstall.exe` in the root directory and select **Run as Administrator**.
-   - *Alternatively*, run `uninstall.ps1` from the `dependencies` folder with PowerShell (Admin).
-2. **Cleanup**: The uninstaller will safely remove the context menu entries, system PATH variables, and program files.
+If the tool isn't for you, I've made it simple to remove everything cleanly:
+1. Locate `uninstall.exe` in the root folder, right-click it, and run as **Administrator**.
+2. Alternatively, run `uninstall.ps1` from the `dependencies` folder using PowerShell (Admin).
+3. The script will safely remove context menu entries, global path variables, and program files.
 
 ---
 
-## ⚠️ Requirements & Disclaimer
+## ⚠️ Requirements & A Tiny Disclaimer
 
 - **OS**: Windows 10 or 11 (64-bit).
-- **Powershell**: 5.1 or higher.
-- **Dependencies**: HandBrakeCLI (Included in the `dependencies` folder and handled by the installer).
+- **PowerShell**: 5.1 or higher.
+- **Dependencies**: HandBrakeCLI (which is included in the package and managed for you).
 
-*Kompresso-chan is provided "as-is". While it is designed for reliability, always ensure you have backups of critical data before using "Replace" mode. This tool is independent and not affiliated with the HandBrake team.*
+*Disclaimer: Since this is a personal project, it's provided "as-is". I've spent a lot of time making it stable, but I highly recommend backing up your critical videos before running **Replace** mode—just to be 100% safe! This tool is independent and not affiliated with the official HandBrake team.*
