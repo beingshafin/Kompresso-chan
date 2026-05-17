@@ -1,6 +1,6 @@
 # 🎬 Kompresso-chan
 
-<img src="dependencies/Assets/kompresso-chan.png" alt="Kompresso-chan Banner" width="200" align="left" style="margin-right: 15px; margin-bottom: 10px;">
+<img src="dependencies/Assets/kompresso-chan.png" alt="Kompresso-chan Banner" width="250" align="left" style="margin-right: 15px; margin-bottom: 10px;">
 
 **Kompresso-chan** is a video compressing utility for Windows I built to solve a simple but frustrating problem: my hard drive was constantly running out of space, and I was tired of opening heavy, complex video software just to downscale raw screen recordings. I wanted a fast, lightweight way to batch-compress files directly from my Windows Explorer context menu. To do that, I cooked up this tool as a PowerShell-based wrapper around the legendary **HandBrakeCLI** engine. Instead of hogging system resources, it lets you right-click any video file or folder, choose from 24 carefully optimized presets (supporting modern codecs like AV1, HEVC, and H.264), and let it run cleanly in the background. It shrunk my own raw captures and media folders by up to 90% while keeping them looking great, so I decided to package it up with a simple installer for anyone else looking to reclaim their disk space!
 
@@ -117,7 +117,7 @@ I love seeing how much space I've reclaimed, so I built two logging formats depe
 ### 📈 Console Session Summary
 At the end of each run, it prints a clean breakdown of the total space saved to keep you updated:
 <p>
-  <img src="dependencies/Assets/summary.png" alt="Console Summary Output" width="400">
+  <img src="dependencies/Assets/summary.png" alt="Console Summary Output" width="470">
 </p>
 
 ---
