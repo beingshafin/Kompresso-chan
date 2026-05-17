@@ -1,6 +1,8 @@
 # 🎬 Kompresso-chan
+<p align="center">
+  <img src="dependencies/Assets/kompresso-chan.png" alt="Kompresso-chan Banner" width="200">
+</p>
 
-<img src="dependencies/Assets/kompresso-chan.png" alt="Kompresso-chan Banner" width="200">
 **Kompresso-chan** is a professional, high-performance video compression utility for Windows. Designed to streamline your media workflow, it acts as a robust wrapper around the industry-standard **HandBrakeCLI**, offering seamless context-menu integration, smart batch processing, and detailed analytics.
 
 
@@ -54,8 +56,9 @@ Kompresso-chan is designed to be portable and easy to set up. Follow these steps
 This is the fastest way to compress videos:
 - **Single Item**: Right-click an `.mp4` file or a folder and select **Compress with Kompresso-chan**.
 - **Multiple Items**: Select multiple files/folders, right-click, and choose the menu option. They will be added to a single processing session.
-
-<img src="dependencies/Assets/presets.png" alt="Preset Selection Screen" width="700">
+<p align="center">
+  <img src="dependencies/Assets/presets.png" alt="Preset Selection Screen" width="700">
+</p>
 
 ### 2. Using the Command Line (CLI)
 Open any terminal (CMD, PowerShell, or Windows Terminal) and use the `komchan` command:
@@ -78,8 +81,9 @@ komchan "C:\Users\You\Desktop\batch_list.txt"
 
 ### 🖥️ Live Processing Output
 Watch real-time dynamic statistics, queue progress, and HandBrake CLI output as Kompresso-chan runs:
-
-<img src="dependencies/Assets/live-update.png" alt="Live Output Screen" width="700">
+<p align="center">
+  <img src="dependencies/Assets/live-update.png" alt="Live Output Screen" width="700">
+</p>
 
 ---
 
@@ -109,8 +113,9 @@ Kompresso-chan doesn't just compress; it tracks your efficiency. It generates tw
 
 ### 📈 Console Session Summary
 At the end of a compression batch, a clean, detailed overview of the saved disk space is displayed:
-
-<img src="dependencies/Assets/summary.png" alt="Console Summary Output" width="700">
+<p align="center">
+  <img src="dependencies/Assets/summary.png" alt="Console Summary Output" width="500">
+</p>
 
 ---
 
