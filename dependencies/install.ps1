@@ -27,6 +27,10 @@ $uninstallSrcPath = Join-Path $PSScriptRoot "uninstall.ps1"
 $uninstallDestPath = Join-Path $kompressoChanDestDir "uninstall.ps1"
 $uninstallExeSrcPath = Join-Path $PSScriptRoot "..\uninstall.exe"
 $uninstallExeDestPath = Join-Path $kompressoChanDestDir "uninstall.exe"
+$wrapperSrcPath = Join-Path $PSScriptRoot "kompresso-context-wrapper.ps1"
+$wrapperDestPath = Join-Path $kompressoChanDestDir "kompresso-context-wrapper.ps1"
+$vbsLauncherSrcPath = Join-Path $PSScriptRoot "kompresso-launch.vbs"
+$vbsLauncherDestPath = Join-Path $kompressoChanDestDir "kompresso-launch.vbs"
 $contextMenuSrcPath = Join-Path $PSScriptRoot "Add-KompressoChan-Menu.reg"
 $regRemoveSrcPath = Join-Path $PSScriptRoot "Remove-KompressoChan-Menu.reg"
 $regRemoveDestPath = Join-Path $kompressoChanDestDir "Remove-KompressoChan-Menu.reg"
@@ -98,6 +102,18 @@ if (Test-Path $kompressoChanSrcPath) {
         if (Test-Path $uninstallExeSrcPath) {
             Copy-Item -Path $uninstallExeSrcPath -Destination $uninstallExeDestPath -Force
             Write-Host "Uninstaller executable copied successfully." -ForegroundColor Gray
+        }
+
+        # Copy the wrapper script used by the context menu to pass full paths safely.
+        if (Test-Path $wrapperSrcPath) {
+            Copy-Item -Path $wrapperSrcPath -Destination $wrapperDestPath -Force
+            Write-Host "Context menu wrapper script copied successfully." -ForegroundColor Gray
+        }
+
+        # Copy the VBS launcher for silent context menu execution.
+        if (Test-Path $vbsLauncherSrcPath) {
+            Copy-Item -Path $vbsLauncherSrcPath -Destination $vbsLauncherDestPath -Force
+            Write-Host "VBS launcher script copied successfully." -ForegroundColor Gray
         }
 
         # Copy Remove-KompressoChan-Menu.reg if it exists

@@ -2,7 +2,7 @@
 
 **Kompresso-chan** is a professional, high-performance video compression utility for Windows. Designed to streamline your media workflow, it acts as a robust wrapper around the industry-standard **HandBrakeCLI**, offering seamless context-menu integration, smart batch processing, and detailed analytics.
 
-![Kompresso-chan Banner](dependencies/kompresso-chan.png)
+![Kompresso-chan Banner](dependencies/Assets/kompresso-chan.png)
 
 ---
 
@@ -55,6 +55,8 @@ This is the fastest way to compress videos:
 - **Single Item**: Right-click an `.mp4` file or a folder and select **Compress with Kompresso-chan**.
 - **Multiple Items**: Select multiple files/folders, right-click, and choose the menu option. They will be added to a single processing session.
 
+![Preset Selection Screen](dependencies/Assets/presets.png)
+
 ### 2. Using the Command Line (CLI)
 Open any terminal (CMD, PowerShell, or Windows Terminal) and use the `komchan` command:
 ```powershell
@@ -74,6 +76,11 @@ For advanced batching, create a `.txt` file containing absolute paths to files o
 komchan "C:\Users\You\Desktop\batch_list.txt"
 ```
 
+### 🖥️ Live Processing Output
+Watch real-time dynamic statistics, queue progress, and HandBrake CLI output as Kompresso-chan runs:
+
+![Live Output Screen](dependencies/Assets/live-update.png)
+
 ---
 
 ## 🛠️ Processing Modes Explained
@@ -90,13 +97,20 @@ When you start a session, you will be prompted to choose a mode:
 
 ## 📊 Logging & Analytics
 
-Kompresso-chan doesn't just compress; it tracks your efficiency. After every session, a `compression_log_YYYY-MM-DD.txt` is generated in the target directory (or the folder of the input list). 
+Kompresso-chan doesn't just compress; it tracks your efficiency. It generates two kinds of logs depending on how it was run:
+- **Folder Log (`compression_log.txt`)**: A static log generated in the target directory (or mirror folder).
+- **Session Log (`session_compression_log_YYYY-M-D-HH.mm.ss.txt`)**: A timestamped log generated next to the input list file whenever you process a batch via a `.txt` list.
 
-**The log includes:**
+**The logs include:**
 - Selected Preset and Mode.
 - Per-file status (Success/Fail) and time taken.
 - **Final Summary**: Total space saved (MB) and compression percentage.
-- **Last Undone Job**: If a session is interrupted, it logs the last file that wasn't completed.
+- **Last Undone Job** (Session Log only): If a session is interrupted, it logs the last file that wasn't completed.
+
+### 📈 Console Session Summary
+At the end of a compression batch, a clean, detailed overview of the saved disk space is displayed:
+
+![Console Summary Output](dependencies/Assets/summary.png)
 
 ---
 

@@ -322,37 +322,6 @@ if ($modeChoice -eq "3") {
 }
 
 # ---------------------------------------------------------------
-#  LOG INITIALIZATION
-# ---------------------------------------------------------------
-$allLogPaths = @()
-$sessionLogPath = $null
-$perLogStats = @{} # Track stats per folder/log
-$logTime = Get-Date -Format "yyyy-M-d-HH.mm.ss"
-
-if ($script:inputListPath) {
-    $logDirForSession = Split-Path $script:inputListPath -Parent
-    
-    # Special case: If the input list is the system one, put the session log next to the first actual item
-    if ($script:inputListPath -eq "C:\Program Files\Kompresso-chan\input.txt" -and $inputItems.Count -gt 0) {
-        $logDirForSession = Split-Path $inputItems[0].FullName -Parent
-    }
-
-    $sessionLogPath = Join-Path $logDirForSession "session_compression_log_$logTime.txt"
-    $allLogPaths += $sessionLogPath
-}
-
-$settingsHeader = @"
-// settings
-Chosen Preset  :  $($selectedPreset.Label)
-Mode           :  $modeLabel
-Start Time     :  $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-"@
-
-if ($sessionLogPath) {
-    $settingsHeader | Out-File -LiteralPath $sessionLogPath -Encoding utf8
-}
-
-# ---------------------------------------------------------------
 #  SCANNING
 # ---------------------------------------------------------------
 $tasks = @()
@@ -379,6 +348,42 @@ foreach ($rootObj in $inputItems) {
             }
         }
     }
+}
+
+# ---------------------------------------------------------------
+#  LOG INITIALIZATION
+# ---------------------------------------------------------------
+$allLogPaths = @()
+$sessionLogPath = $null
+$perLogStats = @{} # Track stats per folder/log
+$logTime = Get-Date -Format "yyyy-M-d-HH.mm.ss"
+
+$shouldCreateSessionLog = $false
+if ($script:inputListPath) {
+    # Check if there is only 1 folder, only 1 file, or exactly 1 folder & 1 file in the list
+    $isSingleOrOneOfEach = ($inputFolderCount -le 1 -and $inputFileCount -le 1 -and ($inputFolderCount + $inputFileCount) -gt 0)
+    $shouldCreateSessionLog = -not $isSingleOrOneOfEach
+}
+
+if ($shouldCreateSessionLog) {
+    $logDirForSession = Split-Path $script:inputListPath -Parent
+    
+    # Special case: If the input list is the system one, put the session log next to the first actual item
+    $systemInputPath = Join-Path ([Environment]::GetEnvironmentVariable('TEMP')) 'kompresso_input.txt'
+    if ($script:inputListPath -eq $systemInputPath -and $inputItems.Count -gt 0) {
+        $logDirForSession = Split-Path $inputItems[0].FullName -Parent
+    }
+
+    $sessionLogPath = Join-Path $logDirForSession "session_compression_log_$logTime.txt"
+    $allLogPaths += $sessionLogPath
+
+    $settingsHeader = @"
+// settings
+Chosen Preset  :  $($selectedPreset.Label)
+Mode           :  $modeLabel
+Start Time     :  $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+"@
+    $settingsHeader | Out-File -LiteralPath $sessionLogPath -Encoding utf8
 }
 
 if ($tasks.Count -eq 0) {
@@ -416,7 +421,7 @@ $createFolderLogs = $true # Default for single inputs
 if ($script:inputListPath -and $inputFolderCount -gt 0) {
     Write-Host -NoNewline "  "
     $logChoice = Read-Host "Create a log file for each folder in the list? [y/N]"
-    $createFolderLogs = ($logChoice.ToLower() -eq "y")
+    $createFolderLogs = ($logChoice -eq "y" -or $logChoice -eq "Y")
 }
 Write-Host ""
 
@@ -442,7 +447,7 @@ foreach ($task in $tasks) {
         $rootObj = $task.InputRoot
         
         $logDir = if ($rootObj.PSIsContainer) { $rootObj.FullName } else { Split-Path $rootObj.FullName -Parent }
-        $currentLogPath = if ($modeChoice -eq "3" -and $rootObj.PSIsContainer) { Join-Path $mirrorMap[$rootObj.FullName] "compression_log_$logTime.txt" } else { Join-Path $logDir "compression_log_$logTime.txt" }
+        $currentLogPath = if ($modeChoice -eq "3" -and $rootObj.PSIsContainer) { Join-Path $mirrorMap[$rootObj.FullName] "compression_log.txt" } else { Join-Path $logDir "compression_log.txt" }
 
         if (-not $perLogStats.ContainsKey($currentLogPath)) {
             $now = Get-Date
@@ -459,7 +464,7 @@ foreach ($task in $tasks) {
             
             # If it's a folder log, write its specific header only if requested
             if ($currentLogPath -ne $sessionLogPath) {
-                if ($createFolderLogs) {
+                if ($createFolderLogs -and $rootObj.PSIsContainer) {
                     $folderHeader = @"
 // settings
 Chosen Preset  :  $($selectedPreset.Label)

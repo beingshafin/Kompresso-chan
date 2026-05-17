@@ -6,7 +6,7 @@ Windows Registry Editor Version 5.00
 "Icon"="C:\\Program Files\\Kompresso-chan\\komchan.exe"
 
 [HKEY_CLASSES_ROOT\*\shell\KompressoChan\command]
-@="powershell.exe -NoProfile -Command \"&{$p=[Environment]::GetCommandLineArgs()[-1];$f=[Environment]::GetEnvironmentVariable('TEMP')+'\\kompresso_input.txt';$m=New-Object Threading.Mutex($false,'KC_W');try{$m.WaitOne()|Out-Null}catch{};if((Test-Path $f)-and((Get-Date)-(Get-Item $f).LastWriteTime).TotalSeconds -gt 5){[IO.File]::WriteAllText($f,$p+[Environment]::NewLine)}else{[IO.File]::AppendAllText($f,$p+[Environment]::NewLine)}$m.ReleaseMutex();$m2=New-Object Threading.Mutex($false,'KC_R');if($m2.WaitOne(0)){Start-Sleep -Seconds 1;Start-Process 'C:\\Program Files\\Kompresso-chan\\komchan.exe' -ArgumentList ([char]34+$f+[char]34)};exit}\" \"%1\""
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-launch.vbs\" \"%1\""
 
 ; For directories
 [HKEY_CLASSES_ROOT\Directory\shell\KompressoChan]
@@ -14,7 +14,7 @@ Windows Registry Editor Version 5.00
 "Icon"="C:\\Program Files\\Kompresso-chan\\komchan.exe"
 
 [HKEY_CLASSES_ROOT\Directory\shell\KompressoChan\command]
-@="powershell.exe -NoProfile -Command \"&{$p=[Environment]::GetCommandLineArgs()[-1];$f=[Environment]::GetEnvironmentVariable('TEMP')+'\\kompresso_input.txt';$m=New-Object Threading.Mutex($false,'KC_W');try{$m.WaitOne()|Out-Null}catch{};if((Test-Path $f)-and((Get-Date)-(Get-Item $f).LastWriteTime).TotalSeconds -gt 5){[IO.File]::WriteAllText($f,$p+[Environment]::NewLine)}else{[IO.File]::AppendAllText($f,$p+[Environment]::NewLine)}$m.ReleaseMutex();$m2=New-Object Threading.Mutex($false,'KC_R');if($m2.WaitOne(0)){Start-Sleep -Seconds 1;Start-Process 'C:\\Program Files\\Kompresso-chan\\komchan.exe' -ArgumentList ([char]34+$f+[char]34)};exit}\" \"%1\""
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-launch.vbs\" \"%1\""
 
 ; For directory backgrounds
 [HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoChan]
@@ -22,4 +22,4 @@ Windows Registry Editor Version 5.00
 "Icon"="C:\\Program Files\\Kompresso-chan\\komchan.exe"
 
 [HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoChan\command]
-@="powershell.exe -NoProfile -Command \"&{$p=[Environment]::GetCommandLineArgs()[-1];$f=[Environment]::GetEnvironmentVariable('TEMP')+'\\kompresso_input.txt';$m=New-Object Threading.Mutex($false,'KC_W');try{$m.WaitOne()|Out-Null}catch{};if((Test-Path $f)-and((Get-Date)-(Get-Item $f).LastWriteTime).TotalSeconds -gt 5){[IO.File]::WriteAllText($f,$p+[Environment]::NewLine)}else{[IO.File]::AppendAllText($f,$p+[Environment]::NewLine)}$m.ReleaseMutex();$m2=New-Object Threading.Mutex($false,'KC_R');if($m2.WaitOne(0)){Start-Sleep -Seconds 1;Start-Process 'C:\\Program Files\\Kompresso-chan\\komchan.exe' -ArgumentList ([char]34+$f+[char]34)};exit}\" \"%V\""
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-launch.vbs\" \"%V\""
