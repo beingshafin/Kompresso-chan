@@ -1,25 +1,103 @@
 Windows Registry Editor Version 5.00
 
-; For files
-[HKEY_CLASSES_ROOT\*\shell\KompressoChan]
-@="Compress with Kompresso-chan"
+; Unified Compress with Kompresso submenu - For files
+[HKEY_CLASSES_ROOT\*\shell\KompressoUnified]
+"MUIVerb"="Compress with Kompresso"
+"SubCommands"=""
 "Icon"="C:\\Program Files\\Kompresso-chan\\komchan.exe"
 
-[HKEY_CLASSES_ROOT\*\shell\KompressoChan\command]
+[HKEY_CLASSES_ROOT\*\shell\KompressoUnified\shell\01replace]
+@="Quick Replace"
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\replace.ico"
+
+[HKEY_CLASSES_ROOT\*\shell\KompressoUnified\shell\01replace\command]
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-quick-launch.vbs\" \"%1\" \"replace\""
+
+[HKEY_CLASSES_ROOT\*\shell\KompressoUnified\shell\02cascade]
+@="Quick Cascade"
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\cascade.ico"
+
+[HKEY_CLASSES_ROOT\*\shell\KompressoUnified\shell\02cascade\command]
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-quick-launch.vbs\" \"%1\" \"cascade\""
+
+[HKEY_CLASSES_ROOT\*\shell\KompressoUnified\shell\03mirror]
+@="Quick Mirror"
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\mirror.ico"
+
+[HKEY_CLASSES_ROOT\*\shell\KompressoUnified\shell\03mirror\command]
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-quick-launch.vbs\" \"%1\" \"mirror\""
+
+[HKEY_CLASSES_ROOT\*\shell\KompressoUnified\shell\04advanced]
+@="Advanced..."
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\advanced.ico"
+
+[HKEY_CLASSES_ROOT\*\shell\KompressoUnified\shell\04advanced\command]
 @="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-launch.vbs\" \"%1\""
 
-; For directories
-[HKEY_CLASSES_ROOT\Directory\shell\KompressoChan]
-@="Compress with Kompresso-chan"
+; Unified Compress with Kompresso submenu - For directories
+[HKEY_CLASSES_ROOT\Directory\shell\KompressoUnified]
+"MUIVerb"="Compress with Kompresso"
+"SubCommands"=""
 "Icon"="C:\\Program Files\\Kompresso-chan\\komchan.exe"
 
-[HKEY_CLASSES_ROOT\Directory\shell\KompressoChan\command]
+[HKEY_CLASSES_ROOT\Directory\shell\KompressoUnified\shell\01replace]
+@="Quick Replace"
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\replace.ico"
+
+[HKEY_CLASSES_ROOT\Directory\shell\KompressoUnified\shell\01replace\command]
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-quick-launch.vbs\" \"%1\" \"replace\""
+
+[HKEY_CLASSES_ROOT\Directory\shell\KompressoUnified\shell\02cascade]
+@="Quick Cascade"
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\cascade.ico"
+
+[HKEY_CLASSES_ROOT\Directory\shell\KompressoUnified\shell\02cascade\command]
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-quick-launch.vbs\" \"%1\" \"cascade\""
+
+[HKEY_CLASSES_ROOT\Directory\shell\KompressoUnified\shell\03mirror]
+@="Quick Mirror"
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\mirror.ico"
+
+[HKEY_CLASSES_ROOT\Directory\shell\KompressoUnified\shell\03mirror\command]
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-quick-launch.vbs\" \"%1\" \"mirror\""
+
+[HKEY_CLASSES_ROOT\Directory\shell\KompressoUnified\shell\04advanced]
+@="Advanced..."
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\advanced.ico"
+
+[HKEY_CLASSES_ROOT\Directory\shell\KompressoUnified\shell\04advanced\command]
 @="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-launch.vbs\" \"%1\""
 
-; For directory backgrounds
-[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoChan]
-@="Compress with Kompresso-chan"
+; Unified Compress with Kompresso submenu - For directory backgrounds
+[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoUnified]
+"MUIVerb"="Compress with Kompresso"
+"SubCommands"=""
 "Icon"="C:\\Program Files\\Kompresso-chan\\komchan.exe"
 
-[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoChan\command]
+[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoUnified\shell\01replace]
+@="Quick Replace"
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\replace.ico"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoUnified\shell\01replace\command]
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-quick-launch.vbs\" \"%V\" \"replace\""
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoUnified\shell\02cascade]
+@="Quick Cascade"
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\cascade.ico"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoUnified\shell\02cascade\command]
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-quick-launch.vbs\" \"%V\" \"cascade\""
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoUnified\shell\03mirror]
+@="Quick Mirror"
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\mirror.ico"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoUnified\shell\03mirror\command]
+@="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-quick-launch.vbs\" \"%V\" \"mirror\""
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoUnified\shell\04advanced]
+@="Advanced..."
+"Icon"="C:\\Program Files\\Kompresso-chan\\menu\\advanced.ico"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\KompressoUnified\shell\04advanced\command]
 @="wscript.exe \"C:\\Program Files\\Kompresso-chan\\kompresso-launch.vbs\" \"%V\""

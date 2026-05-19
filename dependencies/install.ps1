@@ -31,6 +31,10 @@ $wrapperSrcPath = Join-Path $PSScriptRoot "kompresso-context-wrapper.ps1"
 $wrapperDestPath = Join-Path $kompressoChanDestDir "kompresso-context-wrapper.ps1"
 $vbsLauncherSrcPath = Join-Path $PSScriptRoot "kompresso-launch.vbs"
 $vbsLauncherDestPath = Join-Path $kompressoChanDestDir "kompresso-launch.vbs"
+$vbsQuickLauncherSrcPath = Join-Path $PSScriptRoot "kompresso-quick-launch.vbs"
+$vbsQuickLauncherDestPath = Join-Path $kompressoChanDestDir "kompresso-quick-launch.vbs"
+$menuFolderSrcPath = Join-Path $PSScriptRoot "Assets\menu"
+$menuFolderDestPath = Join-Path $kompressoChanDestDir "menu"
 $contextMenuSrcPath = Join-Path $PSScriptRoot "Add-KompressoChan-Menu.reg"
 $regRemoveSrcPath = Join-Path $PSScriptRoot "Remove-KompressoChan-Menu.reg"
 $regRemoveDestPath = Join-Path $kompressoChanDestDir "Remove-KompressoChan-Menu.reg"
@@ -114,6 +118,21 @@ if (Test-Path $kompressoChanSrcPath) {
         if (Test-Path $vbsLauncherSrcPath) {
             Copy-Item -Path $vbsLauncherSrcPath -Destination $vbsLauncherDestPath -Force
             Write-Host "VBS launcher script copied successfully." -ForegroundColor Gray
+        }
+
+        # Copy the quick-launch VBS launcher for quick compression context menu.
+        if (Test-Path $vbsQuickLauncherSrcPath) {
+            Copy-Item -Path $vbsQuickLauncherSrcPath -Destination $vbsQuickLauncherDestPath -Force
+            Write-Host "Quick compression VBS launcher copied successfully." -ForegroundColor Gray
+        }
+
+        # Copy the menu icons folder for context menu icons.
+        if (Test-Path $menuFolderSrcPath) {
+            if (-not (Test-Path $menuFolderDestPath)) {
+                New-Item -ItemType Directory -Path $menuFolderDestPath -Force | Out-Null
+            }
+            Copy-Item -Path "$menuFolderSrcPath\*" -Destination $menuFolderDestPath -Recurse -Force
+            Write-Host "Menu icons copied successfully." -ForegroundColor Gray
         }
 
         # Copy Remove-KompressoChan-Menu.reg if it exists

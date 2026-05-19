@@ -14,16 +14,21 @@
 
 Here are the key things I wanted to make sure the tool handles well:
 
-- **🚀 Context Menu Integration**: You can select any video file or folder, right-click, and select **"Compress with Kompresso-chan"** to start instantly.
+- **🚀 Unified Context Menu**: Right-click any file, folder, or empty space in Explorer to access a clean submenu with four options:
+  - **Quick Replace** — compresses instantly with default settings (Original res, Original FPS, VeryFast quality), overwriting the original.
+  - **Quick Cascade** — same defaults, but saves as `_kompressochan.mp4` alongside the original.
+  - **Quick Mirror** — same defaults, recreates the full folder structure for bulk processing.
+  - **Advanced...** — opens the full interactive prompt with all 24 presets and workflow options.
 - **📂 Bulk Processing**: I made sure it can handle entire directory trees or dozens of selected files at once without breaking a sweat.
 - **🛠️ Three Intelligent Workflow Modes**:
   - **Replace**: Direct in-place replacement of your original files (perfect for maximizing space).
   - **Cascade**: Creates a compressed copy alongside the original file with a `_kompressochan` suffix so you can compare quality.
   - **Mirror**: Recreates an entire folder structure, compressing video assets while copying all non-video files (images, subtitles, etc.) completely intact.
 - **📊 Logging & Summaries**: Automatically generates session logs showing compression ratios, time elapsed, and total disk space saved.
-- **⚡ 24 Performance Presets**: I pre-configured 24 HandBrake presets ranging from 4K AV1/HEVC all the way down to mobile-friendly 480p, optimized for speed and visual quality.
+- **⚡ Flexible Presets**: I built a simple 3-step selection system where you pick resolution (Original/4K/1440p/1080p/720p/480p), FPS (Original or custom), and quality level (Very Fast/Fast/Balanced/HQ/Super HQ) in one quick input.
 - **😴 Post-Task Auto-Shutdown**: An optional setting to automatically shut down your PC after a long overnight queue finishes.
 - **💻 Native CLI Support**: If you prefer terminals like I do, you can run the compression directly via the global `komchan` command.
+- **⚡ Quick Compression Flag**: Use `-quick` from the CLI to skip all prompts and compress with defaults. Combine with other flags (e.g., `-quick -m replace -r 480p`) to override individual settings.
 
 ---
 
@@ -58,25 +63,65 @@ I wanted to make the setup as frictionless as possible, so I built simple C-base
 
 ### 1. The Right-Click Menu
 This is my everyday go-to:
-- Select one or more files/folders, right-click, and choose **Compress with Kompresso-chan**.
-- A custom interactive prompt will pop up asking you to pick your favorite preset and execution mode.
+- Select one or more files/folders, right-click, and choose **Compress with Kompresso**.
+- Pick your workflow:
+  - **Quick Replace / Quick Cascade / Quick Mirror** — instantly compresses with default settings (Original res, Original FPS, VeryFast quality).
+  - **Advanced...** — opens the full interactive prompt to choose your preset and mode.
 
 <p>
-  <img src="dependencies/Assets/presets.png" alt="Preset Selection Screen" width="700">
+  <img src="dependencies/Assets/context-menu.png" alt="Context Menu Screenshot" width="700">
+</p>
+
+<p>
+  <img src="dependencies/Assets/selection-menu.png" alt="Selection Menu Screenshot" width="700">
 </p>
 
 ### 2. The Terminal (CLI)
 For quick single commands, open any shell (CMD, PowerShell, or Windows Terminal) and type:
 ```powershell
-# Compress a single video file
+# Compress a single video file (interactive prompt, default: 1 1 1)
 komchan "D:\Movies\MyVideo.mp4"
 
 # Queue up a whole folder
 komchan "D:\Recordings"
 
-# View my help and usage documentation
+# Skip the prompt with short flags
+komchan "D:\Movies\MyVideo.mp4" -r 1080p -f 60 -q fast
+komchan "D:\Movies\MyVideo.mp4" -r 4 -f 30 -q 2
+
+# Or use a single preset string
+komchan "D:\Movies\MyVideo.mp4" -preset "1080p 60 fast"
+
+# Quick compression with defaults (Original/Original/VeryFast/Cascade)
+komchan "D:\Movies\MyVideo.mp4" -quick
+
+# Quick compression with overrides
+komchan "D:\Movies\MyVideo.mp4" -quick -m replace -r 480p
+
+# Auto-shutdown after encoding completes
+komchan "D:\Recordings" -r 720p -f 30 -q 2 -shut
+
+# Cascade mode (creates _kompressochan.mp4 next to original)
+komchan "D:\Movies\MyVideo.mp4" -r 720p -f 30 -q 2 -m cascade
+
+# Mirror mode for folder batch (recreates folder structure)
+komchan "D:\Recordings" -r 1080p -f 60 -q fast -m mirror
+
+# Force folder logs for multi-folder batch
+komchan my_list.txt -r 4k -f 1 -q balanced -log
+
+# Combine flags for overnight batch run
+komchan "D:\Movies" -r 1440p -f 30 -q fast -shut -log
+
+# View help and usage documentation
 komchan --help
 ```
+
+**Resolution options:** `1`/`original`, `2`/`4k`, `3`/`1440p`, `4`/`1080p`, `5`/`720p`, `6`/`480p`
+**FPS options:** `1` (original) or any number (e.g. `30`, `60`, `23.976`)
+**Quality options:** `1`/`veryfast`, `2`/`fast`, `3`/`balanced`, `4`/`hq`, `5`/`superhq`
+**Mode options:** `1`/`replace`, `2`/`cascade`, `3`/`mirror` (case-insensitive)
+**Flags:** `-quick` (skip prompts, use defaults), `-shut` (auto-shutdown), `-log` (force folder logs), `-m`/`-mode` (processing mode)
 
 ### 3. Drag-and-Drop Batch Lists
 For massive batch runs, I usually create a simple `.txt` file listing absolute file paths (one per line) and then drag-and-drop the file directly onto the desktop shortcut:
@@ -89,6 +134,68 @@ When running, the console shows a live overview of current statistics, total que
 <p>
   <img src="dependencies/Assets/live-update.png" alt="Live Output Screen" width="700">
 </p>
+
+---
+
+## 📖 CLI Reference
+
+Run `komchan --help` to see this in your terminal. Here's a quick breakdown of every flag:
+
+### Basic Usage
+```
+komchan [Path]              - Start compression for a file, folder, or .txt list.
+komchan --help, -h          - Show the help guide.
+komchan --uninstall         - Uninstall Kompresso-chan from your system.
+```
+
+### Flags
+
+| Flag | Aliases | Description |
+| :--- | :--- | :--- |
+| `-r` | `-res` | Resolution: `1`/`original`, `2`/`4k`, `3`/`1440p`, `4`/`1080p`, `5`/`720p`, `6`/`480p` |
+| `-f` | `-fps` | FPS: `1` = keep original, or any number like `30`, `60`, `23.976` |
+| `-q` | `-qual` | Quality: `1`/`veryfast`, `2`/`fast`, `3`/`balanced`, `4`/`hq`, `5`/`superhq` |
+| `-m` | `-mode` | Processing mode: `replace`, `cascade`, or `mirror` (case-insensitive) |
+| `-preset` | — | Single string combining res/fps/qual, e.g. `"1080p 60 fast"` |
+| `-quick` | — | Skip all prompts, use defaults (Original/Original/VeryFast/Cascade). Combine with other flags to override individual settings. |
+| `-shut` | `--shutdown` | Auto-shutdown PC after all encoding finishes. |
+| `-log` | `--force-log` | Force per-folder log files. Session log is auto-generated for multi-item batches. |
+
+### Resolution Options
+
+| Value | Label | Behavior |
+| :--- | :--- | :--- |
+| `1` / `original` | Original | Keep source resolution |
+| `2` / `4k` | 4K | Scale to 2160p max |
+| `3` / `1440p` | 1440p | Scale to 1440p max |
+| `4` / `1080p` | 1080p | Scale to 1080p max |
+| `5` / `720p` | 720p | Scale to 720p max |
+| `6` / `480p` | 480p | Scale to 480p max |
+
+### FPS Options
+
+| Value | Behavior |
+| :--- | :--- |
+| `1` | Keep source framerate |
+| `<number>` | Set custom FPS (e.g. `30`, `60`, `23.976`) |
+
+### Quality Options
+
+| Value | Label | Encoder Preset | RF |
+| :--- | :--- | :--- | :--- |
+| `1` / `veryfast` | VeryFast | veryfast | 24 |
+| `2` / `fast` | Fast | fast | 22 |
+| `3` / `balanced` | Balanced | medium | 20 |
+| `4` / `hq` | HQ | slow | 18 |
+| `5` / `superhq` | SuperHQ | slower | 16 |
+
+### Processing Modes
+
+| Value | Mode | Behavior |
+| :--- | :--- | :--- |
+| `1` / `replace` | Replace | Overwrite the original file with the compressed version. |
+| `2` / `cascade` | Cascade | Save as `original_kompressochan.mp4` in the same folder. |
+| `3` / `mirror` | Mirror | Recreate the folder structure for bulk processing. Falls back to cascade if only files are given. |
 
 ---
 

@@ -1,12 +1,23 @@
 param(
     [Parameter(Mandatory=$true)]
-    [string]$TargetPath
+    [string]$TargetPath,
+    [switch]$Quick,
+    [string]$Mode
 )
 
 # Resolve the Kompresso-chan executable next to this wrapper.
 $scriptDir = Split-Path -Parent $PSCommandPath
 $kompressoExe = Join-Path $scriptDir 'komchan.exe'
 $f = Join-Path ([Environment]::GetEnvironmentVariable('TEMP')) 'kompresso_input.txt'
+
+# Build arguments for komchan.exe
+$exeArgs = @($f)
+if ($Quick) {
+    $exeArgs += '--quick'
+    if ($Mode) {
+        $exeArgs += '-m', $Mode
+    }
+}
 
 # Write the path atomically using a mutex to avoid race conditions.
 $m = New-Object Threading.Mutex($false, 'KC_W')
@@ -28,7 +39,7 @@ try {
 $m2 = New-Object Threading.Mutex($false, 'KC_R')
 if ($m2.WaitOne(0)) {
     try {
-        Start-Process -FilePath $kompressoExe -ArgumentList @($f)
+        Start-Process -FilePath $kompressoExe -ArgumentList $exeArgs
         # Hold the lock for 2 seconds to prevent other concurrent wrappers from launching kompresso-chan again.
         Start-Sleep -Milliseconds 2000
     } finally {
