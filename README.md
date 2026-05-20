@@ -169,7 +169,7 @@ komchan --uninstall         - Uninstall Kompresso-chan from your system.
 | `-quick` | — | Skip all prompts, use defaults. Append `:y/:n` or `y/n` to toggle. Combine with other flags to override. |
 | `-smart` | — | Replace/Mirror mode: skip if compressed is larger. Replace skips replacement; Mirror copies original instead. Append `:y/:n` or `y/n` to toggle. Prompts interactively if not passed. |
 | `-shut` | — | Auto-shutdown PC after all encoding finishes. Append `:y/:n` or `y/n` to toggle. |
-| `-l` | `-log` | Log mode: `session`/`s` (session only), `folder`/`f` (folder only), `both`/`b` (both), `none`/`n` (no logs). Default: `session`. |
+| `-l` | `-log` | Log mode: `session`/`s` (session only), `folder`/`f` (folder only), `both`/`b` (both), `none`/`n` (no logs). Default: `both`. Session logs are only generated for `.txt` batch lists. |
 
 ### Resolution Options
 

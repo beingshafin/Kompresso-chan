@@ -48,7 +48,7 @@ function Resolve-BoolFlag {
 
 function Resolve-LogMode {
     param([string]$value)
-    if ($value -eq "") { return @{ Session = $true; Folder = $false } }
+    if ($value -eq "") { return @{ Session = $true; Folder = $true } }
     $lower = $value.ToLower()
     switch ($lower) {
         { $_ -match "^(session|s)$" } { return @{ Session = $true;  Folder = $false } }
@@ -91,7 +91,7 @@ if ($Help -or $Path -eq "--help" -or $Path -eq "-help" -or $Path -eq "-h" -or $P
     Write-Host "    -m, -mode     Processing mode: replace/cascade/mirror (case-insensitive)"
     Write-Host "    -p, -preset   Single string combining res/fps/qual"
     Write-Host "    -shut         Auto-shutdown PC after all encoding finishes (append :y/:n or y/n)"
-    Write-Host "    -l, -log      Log mode: session(s), folder(f), both(b), none(n). Default: session"
+    Write-Host "    -l, -log      Log mode: session(s), folder(f), both(b), none(n). Default: both"
     Write-Host "    -quick        Skip all prompts, use defaults (append :y/:n or y/n)"
     Write-Host "    -smart        Replace/Mirror: skip if compressed is larger (append :y/:n or y/n)"
     Write-Host ""
@@ -676,18 +676,12 @@ $perLogStats = @{} # Track stats per folder/log
 $logTime = Get-Date -Format "yyyy-M-d-HH.mm.ss"
 
 $shouldCreateSessionLog = $false
-if ($logMode.Session) {
-    if ($script:inputListPath) {
-        $isSingleOrOneOfEach = ($inputFolderCount -le 1 -and $inputFileCount -le 1 -and ($inputFolderCount + $inputFileCount) -gt 0)
-        $shouldCreateSessionLog = -not $isSingleOrOneOfEach
-    } else {
-        $shouldCreateSessionLog = $true
-    }
-} elseif ($Log -eq "") {
-    if ($script:inputListPath) {
-        $isSingleOrOneOfEach = ($inputFolderCount -le 1 -and $inputFileCount -le 1 -and ($inputFolderCount + $inputFileCount) -gt 0)
-        $shouldCreateSessionLog = -not $isSingleOrOneOfEach
-    }
+if ($logMode.Session -and $script:inputListPath) {
+    $isSingleOrOneOfEach = ($inputFolderCount -le 1 -and $inputFileCount -le 1 -and ($inputFolderCount + $inputFileCount) -gt 0)
+    $shouldCreateSessionLog = -not $isSingleOrOneOfEach
+} elseif ($Log -eq "" -and $script:inputListPath) {
+    $isSingleOrOneOfEach = ($inputFolderCount -le 1 -and $inputFileCount -le 1 -and ($inputFolderCount + $inputFileCount) -gt 0)
+    $shouldCreateSessionLog = -not $isSingleOrOneOfEach
 }
 
 if ($shouldCreateSessionLog) {
