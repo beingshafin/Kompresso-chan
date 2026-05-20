@@ -98,8 +98,14 @@ komchan "D:\Movies\MyVideo.mp4" -quick
 # Quick compression with overrides
 komchan "D:\Movies\MyVideo.mp4" -quick -m replace -r 480p
 
+# Quick compression with smart mode enabled
+komchan "D:\Movies\MyVideo.mp4" -quick -m replace -smart
+
 # Auto-shutdown after encoding completes
 komchan "D:\Recordings" -r 720p -f 30 -q 2 -shut
+
+# Disable shutdown explicitly
+komchan "D:\Recordings" -r 720p -f 30 -q 2 -shut:n
 
 # Cascade mode (creates _kompressochan.mp4 next to original)
 komchan "D:\Movies\MyVideo.mp4" -r 720p -f 30 -q 2 -m cascade
@@ -107,11 +113,14 @@ komchan "D:\Movies\MyVideo.mp4" -r 720p -f 30 -q 2 -m cascade
 # Mirror mode for folder batch (recreates folder structure)
 komchan "D:\Recordings" -r 1080p -f 60 -q fast -m mirror
 
-# Force folder logs for multi-folder batch
-komchan my_list.txt -r 4k -f 1 -q balanced -log
+# Session log only
+komchan my_list.txt -r 4k -f 1 -q balanced -l session
+
+# No logs at all
+komchan "D:\Movies" -r 1440p -f 30 -q fast -l none
 
 # Combine flags for overnight batch run
-komchan "D:\Movies" -r 1440p -f 30 -q fast -shut -log
+komchan "D:\Movies" -r 1440p -f 30 -q fast -shut -l both
 
 # View help and usage documentation
 komchan --help
@@ -121,7 +130,7 @@ komchan --help
 **FPS options:** `1` (original) or any number (e.g. `30`, `60`, `23.976`)
 **Quality options:** `1`/`veryfast`, `2`/`fast`, `3`/`balanced`, `4`/`hq`, `5`/`superhq`
 **Mode options:** `1`/`replace`, `2`/`cascade`, `3`/`mirror` (case-insensitive)
-**Flags:** `-quick` (skip prompts, use defaults), `-shut` (auto-shutdown), `-log` (force folder logs), `-m`/`-mode` (processing mode)
+**Flags:** `-quick` (skip prompts), `-smart` (skip if larger), `-shut` (auto-shutdown), `-l`/`-log` (log mode: session/folder/both/none), `-m`/`-mode` (processing mode)
 
 ### 3. Drag-and-Drop Batch Lists
 For massive batch runs, I usually create a simple `.txt` file listing absolute file paths (one per line) and then drag-and-drop the file directly onto the desktop shortcut:
@@ -156,10 +165,11 @@ komchan --uninstall         - Uninstall Kompresso-chan from your system.
 | `-f` | `-fps` | FPS: `1` = keep original, or any number like `30`, `60`, `23.976` |
 | `-q` | `-qual` | Quality: `1`/`veryfast`, `2`/`fast`, `3`/`balanced`, `4`/`hq`, `5`/`superhq` |
 | `-m` | `-mode` | Processing mode: `replace`, `cascade`, or `mirror` (case-insensitive) |
-| `-preset` | — | Single string combining res/fps/qual, e.g. `"1080p 60 fast"` |
-| `-quick` | — | Skip all prompts, use defaults (Original/Original/VeryFast/Cascade). Combine with other flags to override individual settings. |
-| `-shut` | `--shutdown` | Auto-shutdown PC after all encoding finishes. |
-| `-log` | `--force-log` | Force per-folder log files. Session log is auto-generated for multi-item batches. |
+| `-preset` | `-p` | Single string combining res/fps/qual, e.g. `"1080p 60 fast"` |
+| `-quick` | — | Skip all prompts, use defaults. Append `:y/:n` or `y/n` to toggle. Combine with other flags to override. |
+| `-smart` | — | Replace/Mirror mode: skip if compressed is larger. Replace skips replacement; Mirror copies original instead. Append `:y/:n` or `y/n` to toggle. Prompts interactively if not passed. |
+| `-shut` | — | Auto-shutdown PC after all encoding finishes. Append `:y/:n` or `y/n` to toggle. |
+| `-l` | `-log` | Log mode: `session`/`s` (session only), `folder`/`f` (folder only), `both`/`b` (both), `none`/`n` (no logs). Default: `session`. |
 
 ### Resolution Options
 

@@ -17,21 +17,52 @@ param (
     [Alias("q")]
     [string]$Qual,
 
+    [Alias("p")]
     [string]$Preset,
 
     [Alias("shut")]
-    [switch]$Shutdown,
+    [string]$Shutdown = "",
 
-    [Alias("log")]
-    [switch]$ForceLog,
+    [Alias("l")]
+    [string]$Log = "",
 
     [Alias("m")]
     [string]$Mode,
 
-    [switch]$Quick
+    [string]$Quick = "",
+
+    [string]$Smart = ""
 )
 
 $Version = "1.0.0-alpha"
+
+function Resolve-BoolFlag {
+    param([string]$value, [bool]$wasPassed)
+    if (-not $wasPassed) { return $false }
+    if ($value -eq "") { return $true }
+    $lower = $value.ToLower().TrimStart(':')
+    if ($lower -match "^(y|yes|true|1)$") { return $true }
+    if ($lower -match "^(n|no|false|0)$") { return $false }
+    return $true
+}
+
+function Resolve-LogMode {
+    param([string]$value)
+    if ($value -eq "") { return @{ Session = $true; Folder = $false } }
+    $lower = $value.ToLower()
+    switch ($lower) {
+        { $_ -match "^(session|s)$" } { return @{ Session = $true;  Folder = $false } }
+        { $_ -match "^(folder|f)$" }  { return @{ Session = $false; Folder = $true  } }
+        { $_ -match "^(both|b)$" }    { return @{ Session = $true;  Folder = $true  } }
+        { $_ -match "^(none|n)$" }    { return @{ Session = $false; Folder = $false } }
+        Default { return @{ Session = $false; Folder = $false } }
+    }
+}
+
+$doQuick = Resolve-BoolFlag -value $Quick -wasPassed $PSBoundParameters.ContainsKey('Quick')
+$doSmart = Resolve-BoolFlag -value $Smart -wasPassed $PSBoundParameters.ContainsKey('Smart')
+$doShutdown = Resolve-BoolFlag -value $Shutdown -wasPassed $PSBoundParameters.ContainsKey('Shutdown')
+$logMode = Resolve-LogMode -value $Log
 
 # Handle Help parameter
 if ($Help -or $Path -eq "--help" -or $Path -eq "-help" -or $Path -eq "-h" -or $Path -eq "-?") {
@@ -58,10 +89,11 @@ if ($Help -or $Path -eq "--help" -or $Path -eq "-help" -or $Path -eq "-h" -or $P
     Write-Host "    -f, -fps      FPS (1 = original, or a number like 30, 60, 23.976)"
     Write-Host "    -q, -qual     Quality (number or name, case-insensitive)"
     Write-Host "    -m, -mode     Processing mode: replace/cascade/mirror (case-insensitive)"
-    Write-Host "    -preset       Single string combining res/fps/qual"
-    Write-Host "    -shut         Auto-shutdown PC after all encoding finishes"
-    Write-Host "    -log          Force per-folder log files (session log is auto-generated for multi-item batches)"
-    Write-Host "    -quick        Skip all prompts, use defaults (Original/Original/VeryFast/Cascade). Combine with other flags to override defaults."
+    Write-Host "    -p, -preset   Single string combining res/fps/qual"
+    Write-Host "    -shut         Auto-shutdown PC after all encoding finishes (append :y/:n or y/n)"
+    Write-Host "    -l, -log      Log mode: session(s), folder(f), both(b), none(n). Default: session"
+    Write-Host "    -quick        Skip all prompts, use defaults (append :y/:n or y/n)"
+    Write-Host "    -smart        Replace/Mirror: skip if compressed is larger (append :y/:n or y/n)"
     Write-Host ""
     Write-Host "  RESOLUTION OPTIONS:" -ForegroundColor White
     Write-Host "    1, original   - Keep source resolution"
@@ -237,9 +269,9 @@ function Resolve-Fps {
     return $null
 }
 
-$useCliPreset = ($Res -or $Fps -or $Qual -or $Preset -or $Quick)
+$useCliPreset = ($Res -or $Fps -or $Qual -or $Preset -or $doQuick)
 
-if ($Quick) {
+if ($doQuick) {
     if (-not $Res) { $Res = "1" }
     if (-not $Fps) { $Fps = "1" }
     if (-not $Qual) { $Qual = "1" }
@@ -501,7 +533,7 @@ if ($Mode) {
     if ($modeChoice -eq "3" -and (-not $hasFolder)) {
         $modeChoice = "2"
     }
-} elseif (-not $Quick) {
+} elseif (-not $doQuick) {
     Write-Host "  Compressed videos should:"
     Write-Host "  1. Replace (Overwrite original)"
     Write-Host "  2. Cascade (Create x_kompressochan.mp4)"
@@ -537,12 +569,23 @@ $modeLabel = switch ($modeChoice) {
 }
 
 Write-Host ""
-if (-not $Shutdown -and -not $Quick) {
+if (-not $doSmart -and ($modeChoice -eq "1" -or $modeChoice -eq "3") -and -not $doQuick) {
+    Write-Host -NoNewline "  "
+    if ($modeChoice -eq "1") {
+        $smartPrompt = Read-Host "Smart mode: skip replacement if compressed is larger? [y/N]"
+    } else {
+        $smartPrompt = Read-Host "Smart mode: copy original video if compressed is larger? [y/N]"
+    }
+    if ($smartPrompt.ToLower() -eq "y") {
+        $doSmart = $true
+    }
+}
+
+Write-Host ""
+if (-not $doShutdown -and -not $doQuick) {
     Write-Host -NoNewline "  "
     $shutdownPrompt = Read-Host "Shutdown when everything is done? [y/N]"
     $doShutdown = ($shutdownPrompt.ToLower() -eq "y")
-} else {
-    $doShutdown = $Shutdown
 }
 Write-Host -NoNewline "$([char]27)[2J$([char]27)[H"
 
@@ -633,10 +676,18 @@ $perLogStats = @{} # Track stats per folder/log
 $logTime = Get-Date -Format "yyyy-M-d-HH.mm.ss"
 
 $shouldCreateSessionLog = $false
-if ($script:inputListPath) {
-    # Check if there is only 1 folder, only 1 file, or exactly 1 folder & 1 file in the list
-    $isSingleOrOneOfEach = ($inputFolderCount -le 1 -and $inputFileCount -le 1 -and ($inputFolderCount + $inputFileCount) -gt 0)
-    $shouldCreateSessionLog = -not $isSingleOrOneOfEach
+if ($logMode.Session) {
+    if ($script:inputListPath) {
+        $isSingleOrOneOfEach = ($inputFolderCount -le 1 -and $inputFileCount -le 1 -and ($inputFolderCount + $inputFileCount) -gt 0)
+        $shouldCreateSessionLog = -not $isSingleOrOneOfEach
+    } else {
+        $shouldCreateSessionLog = $true
+    }
+} elseif ($Log -eq "") {
+    if ($script:inputListPath) {
+        $isSingleOrOneOfEach = ($inputFolderCount -le 1 -and $inputFileCount -le 1 -and ($inputFolderCount + $inputFileCount) -gt 0)
+        $shouldCreateSessionLog = -not $isSingleOrOneOfEach
+    }
 }
 
 if ($shouldCreateSessionLog) {
@@ -693,13 +744,14 @@ if ($sessionLogPath) {
     "`n// timeline" | Add-Content -LiteralPath $sessionLogPath
 }
 
-$createFolderLogs = $true
-if ($ForceLog) {
+$createFolderLogs = $logMode.Folder
+if (-not $logMode.Folder -and -not $logMode.Session -and $Log -eq "") {
     $createFolderLogs = $true
-} elseif ($script:inputListPath -and $inputFolderCount -gt 1) {
-    Write-Host -NoNewline "  "
-    $logChoice = Read-Host "Create a log file for each folder in the list? [Y/n]"
-    $createFolderLogs = ($logChoice -ne "n" -and $logChoice -ne "N")
+    if ($script:inputListPath -and $inputFolderCount -gt 1) {
+        Write-Host -NoNewline "  "
+        $logChoice = Read-Host "Create a log file for each folder in the list? [Y/n]"
+        $createFolderLogs = ($logChoice -ne "n" -and $logChoice -ne "N")
+    }
 }
 Write-Host ""
 
@@ -826,32 +878,59 @@ Start Time     :  $($now.ToString("yyyy-MM-dd HH:mm:ss"))
 
             if ($outputSize -gt 0) {
                 $totalOriginalBytes += $originalSize
-                $totalOutputBytes += $outputSize
 
-                if ($modeChoice -eq "1") {
+                $isSmartSkipped = $false
+
+                if ($modeChoice -eq "1" -and $doSmart -and ($outputSize -ge $originalSize)) {
+                    Write-Host "  Smart: Compressed file is larger or equal. Skipping replacement." -ForegroundColor Yellow
+                    Remove-Item -LiteralPath $outputFile -Force -ErrorAction SilentlyContinue
+                    $totalOutputBytes += $originalSize
+                    $isSmartSkipped = $true
+                } elseif ($modeChoice -eq "3" -and $doSmart -and ($outputSize -ge $originalSize)) {
+                    Write-Host "  Smart: Compressed file is larger or equal. Copying original instead." -ForegroundColor Yellow
+                    Remove-Item -LiteralPath $outputFile -Force -ErrorAction SilentlyContinue
+                    Copy-Item -LiteralPath $inputFile -Destination $outputFile -Force
+                    $totalOutputBytes += $originalSize
+                    $isSmartSkipped = $true
+                } else {
+                    $totalOutputBytes += $outputSize
+                }
+
+                if ($modeChoice -eq "1" -and -not $isSmartSkipped) {
                     Remove-Item -LiteralPath $inputFile -Force -ErrorAction Stop
                     Rename-Item -LiteralPath $outputFile -NewName $task.File.Name -ErrorAction Stop
                 }
 
                 $ps.success++
                 $ps.origBytes += $originalSize
-                $ps.outBytes += $outputSize
+                if ($isSmartSkipped) {
+                    $ps.outBytes += $originalSize
+                } else {
+                    $ps.outBytes += $outputSize
+                }
                 $ps.duration += $elapsed
                 $ps.endTime   = Get-Date
 
                 $origMB = [Math]::Round($originalSize / 1MB, 2)
-                $compMB = [Math]::Round($outputSize / 1MB, 2)
-                $pctChange = [Math]::Round((($originalSize - $outputSize) / $originalSize) * 100, 1)
 
-                if ($pctChange -ge 0) {
-                    Write-Host "  Done: $origMB MB --> $compMB MB ($pctChange% smaller) in $timeStr" -ForegroundColor Gray
+                if ($isSmartSkipped) {
+                    $status = "Skipped"
+                    $sizeInfo = "$origMB MB (unchanged - compressed was larger)"
                 } else {
-                    $absPct = [Math]::Abs($pctChange)
-                    Write-Host "  Done: $origMB MB --> $compMB MB ($absPct% larger) in $timeStr" -ForegroundColor Yellow
+                    $compMB = [Math]::Round($outputSize / 1MB, 2)
+                    $pctChange = [Math]::Round((($originalSize - $outputSize) / $originalSize) * 100, 1)
+
+                    if ($pctChange -ge 0) {
+                        Write-Host "  Done: $origMB MB --> $compMB MB ($pctChange% smaller) in $timeStr" -ForegroundColor Gray
+                    } else {
+                        $absPct = [Math]::Abs($pctChange)
+                        Write-Host "  Done: $origMB MB --> $compMB MB ($absPct% larger) in $timeStr" -ForegroundColor Yellow
+                    }
+
+                    $status = "Success"
+                    $sizeInfo = "$origMB MB -> $compMB MB"
                 }
-                
-                $status = "Success"
-                $sizeInfo = "$origMB MB -> $compMB MB"
+
                 $successCount++
                 $lastUndone = ""
             }
