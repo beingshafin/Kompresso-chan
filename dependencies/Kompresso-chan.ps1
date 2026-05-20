@@ -31,7 +31,9 @@ param (
 
     [string]$Quick = "",
 
-    [string]$Smart = ""
+    [string]$Smart = "",
+
+    [switch]$Config
 )
 
 $Version = "1.0.0-alpha"
@@ -59,10 +61,219 @@ function Resolve-LogMode {
     }
 }
 
+function Get-ConfigPath {
+    $configDir = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Kompresso-chan'
+    return Join-Path $configDir 'config.json'
+}
+
+function Get-Defaults {
+    $configPath = Get-ConfigPath
+    $defaultConfig = @{
+        resolution = "1"
+        fps        = "1"
+        quality    = "1"
+        mode       = "cascade"
+        smart      = $false
+        shutdown   = $false
+        log        = "both"
+    }
+    if (Test-Path $configPath) {
+        try {
+            $content = Get-Content $configPath -Raw
+            $parsed = $content | ConvertFrom-Json
+            $config = @{}
+            foreach ($prop in $parsed.PSObject.Properties) {
+                $config[$prop.Name] = $prop.Value
+            }
+            foreach ($key in $defaultConfig.Keys) {
+                if (-not $config.ContainsKey($key)) {
+                    $config[$key] = $defaultConfig[$key]
+                }
+            }
+            return $config
+        } catch {
+            Save-Defaults -config $defaultConfig
+            return $defaultConfig
+        }
+    } else {
+        Save-Defaults -config $defaultConfig
+        return $defaultConfig
+    }
+}
+
+function Save-Defaults {
+    param([hashtable]$config)
+    $configPath = Get-ConfigPath
+    $configDir = Split-Path $configPath -Parent
+    if (-not (Test-Path $configDir)) {
+        New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+    }
+    $config | ConvertTo-Json | Out-File -LiteralPath $configPath -Encoding utf8
+}
+
+$defaults = Get-Defaults
+
 $doQuick = Resolve-BoolFlag -value $Quick -wasPassed $PSBoundParameters.ContainsKey('Quick')
 $doSmart = Resolve-BoolFlag -value $Smart -wasPassed $PSBoundParameters.ContainsKey('Smart')
 $doShutdown = Resolve-BoolFlag -value $Shutdown -wasPassed $PSBoundParameters.ContainsKey('Shutdown')
-$logMode = Resolve-LogMode -value $Log
+
+if ($PSBoundParameters.ContainsKey('Log')) {
+    $logMode = Resolve-LogMode -value $Log
+} else {
+    $logMode = Resolve-LogMode -value $defaults.log
+}
+
+# Handle Config parameter
+if ($Config) {
+    $configArgs = $PSBoundParameters.Keys | Where-Object { $_ -ne 'Config' }
+    if ($configArgs.Count -gt 0 -or ($Path -ne "")) {
+        Write-Host "  ERROR: -config must be used alone." -ForegroundColor Red
+        exit
+    }
+    Write-Host -NoNewline "$([char]27)[2J$([char]27)[H"
+    Write-Host "
+   __ __
+  / //_/__  __ _  ___  _______ ___ ___ ___  ____
+ / ,< / _ \/  ' \/ _ \/ __/ -_|_-<(_-</ _ \/___/
+/_/|_|\___/_/_/_/ .__/_/  \__/___/___/\___/
+               /_/         v$Version
+" -ForegroundColor Cyan
+    Write-Host "  CONFIGURE DEFAULTS" -ForegroundColor Cyan
+    Write-Host "  ===========================" -ForegroundColor Cyan
+    Write-Host ""
+
+    Write-Host "  Default Resolution:"
+    Write-Host "  1) Original  2) 4K  3) 1440p  4) 1080p  5) 720p  6) 480p"
+    do {
+        Write-Host -NoNewline "  > "
+        $resInput = Read-Host
+        if ($resInput -eq "") { break }
+        $resInt = $resInput -as [int]
+        if ($resInt -ge 1 -and $resInt -le 6) {
+            $defaults.resolution = $resInput
+            break
+        }
+        $resLower = $resInput.ToLower()
+        $match = @("original","4k","1440p","1080p","720p","480p") | Where-Object { $_ -eq $resLower }
+        if ($match) {
+            $defaults.resolution = @("1","2","3","4","5","6")[@("original","4k","1440p","1080p","720p","480p").IndexOf($resLower)]
+            break
+        }
+        Write-Host "  Invalid choice." -ForegroundColor Yellow
+    } while ($true)
+
+    Write-Host ""
+    Write-Host "  Default FPS:"
+    Write-Host "  1) Original  2) custom (type: number of fps)"
+    do {
+        Write-Host -NoNewline "  > "
+        $fpsInput = Read-Host
+        if ($fpsInput -eq "") { break }
+        if ($fpsInput -eq "1") {
+            $defaults.fps = "1"
+            break
+        }
+        $fpsVal = $fpsInput -as [double]
+        if ($fpsVal -ne $null -and $fpsVal -ge 1) {
+            $defaults.fps = $fpsInput
+            break
+        }
+        Write-Host "  Invalid choice." -ForegroundColor Yellow
+    } while ($true)
+
+    Write-Host ""
+    Write-Host "  Default Quality:"
+    Write-Host "  1) VeryFast  2) Fast  3) Balanced  4) HQ  5) SuperHQ"
+    do {
+        Write-Host -NoNewline "  > "
+        $qualInput = Read-Host
+        if ($qualInput -eq "") { break }
+        $qualInt = $qualInput -as [int]
+        if ($qualInt -ge 1 -and $qualInt -le 5) {
+            $defaults.quality = $qualInput
+            break
+        }
+        $qualLower = $qualInput.ToLower()
+        $match = @("veryfast","fast","balanced","hq","superhq") | Where-Object { $_ -eq $qualLower }
+        if ($match) {
+            $defaults.quality = @("1","2","3","4","5")[@("veryfast","fast","balanced","hq","superhq").IndexOf($qualLower)]
+            break
+        }
+        Write-Host "  Invalid choice." -ForegroundColor Yellow
+    } while ($true)
+
+    Write-Host ""
+    Write-Host "  Default Mode:"
+    Write-Host "  1) Replace  2) Cascade  3) Mirror"
+    do {
+        Write-Host -NoNewline "  > "
+        $modeInput = Read-Host
+        if ($modeInput -eq "") { break }
+        $modeLower = $modeInput.ToLower()
+        $modeChoice = switch ($modeLower) {
+            "1" { "replace" }
+            "replace" { "replace" }
+            "2" { "cascade" }
+            "cascade" { "cascade" }
+            "3" { "mirror" }
+            "mirror" { "mirror" }
+            Default { "" }
+        }
+        if ($modeChoice -ne "") {
+            $defaults.mode = $modeChoice
+            break
+        }
+        Write-Host "  Invalid choice." -ForegroundColor Yellow
+    } while ($true)
+
+    Write-Host ""
+    Write-Host -NoNewline "  Smart mode by default? [y/N]: "
+    $smartInput = Read-Host
+    $defaults.smart = ($smartInput.ToLower() -eq "y")
+
+    Write-Host -NoNewline "  Shutdown by default? [y/N]: "
+    $shutInput = Read-Host
+    $defaults.shutdown = ($shutInput.ToLower() -eq "y")
+
+    Write-Host ""
+    Write-Host "  Default Log Mode:"
+    Write-Host "  1) Session  2) Folder  3) Both  4) None"
+    do {
+        Write-Host -NoNewline "  > "
+        $logInput = Read-Host
+        if ($logInput -eq "") { break }
+        $logLower = $logInput.ToLower()
+        $logChoice = switch ($logLower) {
+            "1" { "session" }
+            "s" { "session" }
+            "session" { "session" }
+            "2" { "folder" }
+            "f" { "folder" }
+            "folder" { "folder" }
+            "3" { "both" }
+            "b" { "both" }
+            "both" { "both" }
+            "4" { "none" }
+            "n" { "none" }
+            "none" { "none" }
+            Default { "" }
+        }
+        if ($logChoice -ne "") {
+            $defaults.log = $logChoice
+            break
+        }
+        Write-Host "  Invalid choice." -ForegroundColor Yellow
+    } while ($true)
+
+    Save-Defaults -config $defaults
+    Write-Host ""
+    Write-Host "  Defaults saved to: $(Get-ConfigPath)" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  Press any key to exit..." -ForegroundColor Yellow
+    while ($Host.UI.RawUI.KeyAvailable) { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") }
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit
+}
 
 # Handle Help parameter
 if ($Help -or $Path -eq "--help" -or $Path -eq "-help" -or $Path -eq "-h" -or $Path -eq "-?") {
@@ -94,6 +305,8 @@ if ($Help -or $Path -eq "--help" -or $Path -eq "-help" -or $Path -eq "-h" -or $P
     Write-Host "    -l, -log      Log mode: session(s), folder(f), both(b), none(n). Default: both"
     Write-Host "    -quick        Skip all prompts, use defaults (append :y/:n or y/n)"
     Write-Host "    -smart        Replace/Mirror: skip if compressed is larger (append :y/:n or y/n)"
+    Write-Host "    -config       Open interactive config menu to set persistent defaults"
+    Write-Host "    Note: Defaults stored in %APPDATA%\Kompresso-chan\config.json"
     Write-Host ""
     Write-Host "  RESOLUTION OPTIONS:" -ForegroundColor White
     Write-Host "    1, original   - Keep source resolution"
@@ -272,10 +485,10 @@ function Resolve-Fps {
 $useCliPreset = ($Res -or $Fps -or $Qual -or $Preset -or $doQuick)
 
 if ($doQuick) {
-    if (-not $Res) { $Res = "1" }
-    if (-not $Fps) { $Fps = "1" }
-    if (-not $Qual) { $Qual = "1" }
-    if (-not $Mode) { $Mode = "cascade" }
+    if (-not $Res) { $Res = $defaults.resolution }
+    if (-not $Fps) { $Fps = $defaults.fps }
+    if (-not $Qual) { $Qual = $defaults.quality }
+    if (-not $Mode) { $Mode = $defaults.mode }
     if (-not $Preset) { $Preset = "" }
 }
 
@@ -292,9 +505,9 @@ if ($useCliPreset) {
         $Qual = $presetParts[2]
     }
 
-    if (-not $Res) { $Res = "1" }
-    if (-not $Fps) { $Fps = "1" }
-    if (-not $Qual) { $Qual = "1" }
+    if (-not $Res) { $Res = $defaults.resolution }
+    if (-not $Fps) { $Fps = $defaults.fps }
+    if (-not $Qual) { $Qual = $defaults.quality }
 
     $selectedResolution = Resolve-Resolution -value $Res
     if (-not $selectedResolution) {
@@ -333,22 +546,29 @@ Write-Host "  " -NoNewline
 Write-Host "--------------------"
 Write-Host ""
 Write-Host "  Resolution:"
-Write-Host "  1) Original  2) 4K  3) 1440p  4) 1080p  5) 720p  6) 480p"
+$resLine = ""
+for ($i = 1; $i -le 6; $i++) {
+    $label = ($resolutions | Where-Object { $_.Id -eq $i }).Label
+    $marker = if ($defaults.resolution -eq $i.ToString()) { "*" } else { "" }
+    $resLine += "$i) $label$marker  "
+}
+Write-Host "  $resLine"
 Write-Host ""
 Write-Host "  FPS:"
-Write-Host "  1) Original  2) custom (type: number of fps)"
+$defaultFpsIsOriginal = ($defaults.fps -eq "1")
+Write-Host "  1) Original$(if ($defaultFpsIsOriginal) {'*'})  2) custom (type: number of fps)"
 Write-Host ""
 Write-Host "  Quality:"
-Write-Host "  1) VeryFast"
-Write-Host "  2) Fast"
-Write-Host "  3) Balanced"
-Write-Host "  4) HQ"
-Write-Host "  5) SuperHQ"
+$qualLine = ""
+for ($i = 1; $i -le 5; $i++) {
+    $label = ($qualityPresets | Where-Object { $_.Id -eq $i }).Label
+    $marker = if ($defaults.quality -eq $i.ToString()) { "*" } else { "" }
+    $qualLine += "$i) $label$marker  "
+}
+Write-Host "  $qualLine"
 Write-Host ""
 Write-Host "  " -NoNewline
 Write-Host "--------------------"
-Write-Host ""
-Write-Host "  (1 1 1 is default)"
 Write-Host ""
 
 do {
@@ -356,7 +576,7 @@ do {
     $presetInput = Read-Host
     
     if ($presetInput.Trim() -eq "") {
-        $presetInput = "1 1 1"
+        $presetInput = "$($defaults.resolution) $($defaults.fps) $($defaults.quality)"
     }
     
     $parts = $presetInput.Trim() -split '\s+'
@@ -535,10 +755,16 @@ if ($Mode) {
     }
 } elseif (-not $doQuick) {
     Write-Host "  Compressed videos should:"
-    Write-Host "  1. Replace (Overwrite original)"
-    Write-Host "  2. Cascade (Create x_kompressochan.mp4)"
+    $defaultModeNum = switch ($defaults.mode.ToLower()) {
+        "replace" { "1" }
+        "cascade" { "2" }
+        "mirror"  { "3" }
+        Default   { "2" }
+    }
+    Write-Host "  1. Replace$(if ($defaultModeNum -eq '1') {'*'}) (Overwrite original)"
+    Write-Host "  2. Cascade$(if ($defaultModeNum -eq '2') {'*'}) (Create x_kompressochan.mp4)"
     if ($hasFolder) {
-        Write-Host "  3. Mirror  (New folder structure for folders)"
+        Write-Host "  3. Mirror$(if ($defaultModeNum -eq '3') {'*'})  (New folder structure for folders)"
     }
     Write-Host ""
 
@@ -548,7 +774,7 @@ if ($Mode) {
         Write-Host -NoNewline "  "
         $modeChoiceInput = Read-Host "Enter mode (1-$maxMode)"
         if ($modeChoiceInput -eq "") { 
-            $modeChoice = "1" 
+            $modeChoice = $defaultModeNum
         } else { 
             $modeChoice = $modeChoiceInput 
         }
@@ -571,12 +797,15 @@ $modeLabel = switch ($modeChoice) {
 Write-Host ""
 if (-not $doSmart -and ($modeChoice -eq "1" -or $modeChoice -eq "3") -and -not $doQuick) {
     Write-Host -NoNewline "  "
+    $smartDefault = if ($defaults.smart) { "[Y/n]" } else { "[y/N]" }
     if ($modeChoice -eq "1") {
-        $smartPrompt = Read-Host "Smart mode: skip replacement if compressed is larger? [y/N]"
+        $smartPrompt = Read-Host "Smart mode: skip replacement if compressed is larger? $smartDefault"
     } else {
-        $smartPrompt = Read-Host "Smart mode: copy original video if compressed is larger? [y/N]"
+        $smartPrompt = Read-Host "Smart mode: copy original video if compressed is larger? $smartDefault"
     }
-    if ($smartPrompt.ToLower() -eq "y") {
+    if ($smartPrompt -eq "") {
+        $doSmart = $defaults.smart
+    } elseif ($smartPrompt.ToLower() -eq "y") {
         $doSmart = $true
     }
 }
@@ -584,8 +813,13 @@ if (-not $doSmart -and ($modeChoice -eq "1" -or $modeChoice -eq "3") -and -not $
 Write-Host ""
 if (-not $doShutdown -and -not $doQuick) {
     Write-Host -NoNewline "  "
-    $shutdownPrompt = Read-Host "Shutdown when everything is done? [y/N]"
-    $doShutdown = ($shutdownPrompt.ToLower() -eq "y")
+    $shutDefault = if ($defaults.shutdown) { "[Y/n]" } else { "[y/N]" }
+    $shutdownPrompt = Read-Host "Shutdown when everything is done? $shutDefault"
+    if ($shutdownPrompt -eq "") {
+        $doShutdown = $defaults.shutdown
+    } else {
+        $doShutdown = ($shutdownPrompt.ToLower() -eq "y")
+    }
 }
 Write-Host -NoNewline "$([char]27)[2J$([char]27)[H"
 
