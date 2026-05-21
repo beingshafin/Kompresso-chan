@@ -18,6 +18,7 @@ $uninstallationResults = @{
     PATH = "Skipped"
     KompressoChan = "Skipped"
     HandBrakeCLI = "Skipped"
+    AppData = "Skipped"
 }
 
 # Define Paths
@@ -30,7 +31,7 @@ $regRemovePath = Join-Path $PSScriptRoot "Remove-KompressoChan-Menu.reg"
 Write-Host "--- Starting Uninstallation ---`n" -ForegroundColor Cyan
 
 # 0. Stop Running Processes
-Write-Host "[Step 0/6] Stopping running processes..." -ForegroundColor White
+Write-Host "[Step 0/7] Stopping running processes..." -ForegroundColor White
 $processesToStop = @("komchan", "HandBrakeCLI", "Kompresso-chan")
 $processesStopped = 0
 foreach ($procName in $processesToStop) {
@@ -54,7 +55,7 @@ if ($processesStopped -gt 0) {
 Write-Host "Done checking processes.`n" -ForegroundColor Gray
 
 # 1. Remove Context Menu
-Write-Host "[Step 1/6] Removing Windows Context Menu..." -ForegroundColor White
+Write-Host "[Step 1/7] Removing Windows Context Menu..." -ForegroundColor White
 if (Test-Path $regRemovePath) {
     try {
         $process = Start-Process regedit.exe -ArgumentList "/s `"$regRemovePath`"" -Wait -PassThru
@@ -77,7 +78,7 @@ if (Test-Path $regRemovePath) {
 }
 
 # 2. Remove Desktop Shortcut
-Write-Host "[Step 2/6] Removing Desktop shortcut..." -ForegroundColor White
+Write-Host "[Step 2/7] Removing Desktop shortcut..." -ForegroundColor White
 try {
     $DesktopPath = [Environment]::GetFolderPath("Desktop")
     if (-not $DesktopPath) { $DesktopPath = Join-Path $env:USERPROFILE "Desktop" }
@@ -96,7 +97,7 @@ try {
 }
 
 # 3. Remove from System PATH
-Write-Host "[Step 3/6] Removing from System PATH..." -ForegroundColor White
+Write-Host "[Step 3/7] Removing from System PATH..." -ForegroundColor White
 try {
     $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
     if ($currentPath -like "*$kompressoChanDestDir*") {
@@ -115,7 +116,7 @@ try {
 }
 
 # 4. Remove Kompresso-chan Files
-Write-Host "[Step 4/6] Removing Kompresso-chan files..." -ForegroundColor White
+Write-Host "[Step 4/7] Removing Kompresso-chan files..." -ForegroundColor White
 try {
     if (Test-Path $kompressoChanDestDir) {
         Remove-Item -Path $kompressoChanDestDir -Recurse -Force
@@ -130,7 +131,7 @@ try {
 }
 
 # 5. Remove HandBrakeCLI (Keep GUI)
-Write-Host "[Step 5/6] Removing HandBrakeCLI..." -ForegroundColor White
+Write-Host "[Step 5/7] Removing HandBrakeCLI..." -ForegroundColor White
 try {
     if (Test-Path $handbrakeCliPath) {
         Remove-Item -Path $handbrakeCliPath -Force
@@ -144,6 +145,53 @@ try {
     $uninstallationResults.HandBrakeCLI = "Error: $($_.Exception.Message)"
 }
 
+# 6. Check & Optionally Remove AppData Config
+Write-Host "[Step 6/7] Checking configuration..." -ForegroundColor White
+try {
+    $configDir = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Kompresso-chan'
+    $configPath = Join-Path $configDir 'config.json'
+
+    $isModified = $false
+    if (Test-Path $configPath) {
+        try {
+            $content = Get-Content $configPath -Raw -ErrorAction Stop
+            $parsed = $content | ConvertFrom-Json -ErrorAction Stop
+            if ([string]$parsed.resolution -ne "original") { $isModified = $true }
+            if ([string]$parsed.fps -ne "original") { $isModified = $true }
+            if ([string]$parsed.quality -ne "veryfast") { $isModified = $true }
+            if ([string]$parsed.mode -ne "mirror") { $isModified = $true }
+            if ([bool]$parsed.smart -ne $false) { $isModified = $true }
+            if ([bool]$parsed.shutdown -ne $false) { $isModified = $true }
+            if ([string]$parsed.log -ne "both") { $isModified = $true }
+        } catch {
+            $isModified = $true
+        }
+    }
+
+    if ($isModified) {
+        Write-Host "Custom settings detected in configuration file." -ForegroundColor Yellow
+        Write-Host -NoNewline "  "
+        $deleteConfig = Read-Host "Delete configuration? [y/N]"
+        if ($deleteConfig.ToLower() -eq "y") {
+            if (Test-Path $configDir) {
+                Remove-Item -Path $configDir -Recurse -Force
+                Write-Host "Configuration deleted." -ForegroundColor Gray
+                $uninstallationResults.AppData = "Deleted"
+            } else {
+                $uninstallationResults.AppData = "Not Found"
+            }
+        } else {
+            Write-Host "Configuration preserved." -ForegroundColor Gray
+            $uninstallationResults.AppData = "Preserved"
+        }
+    } else {
+        Write-Host "Configuration is using default settings. Nothing to clean up." -ForegroundColor Gray
+        $uninstallationResults.AppData = "Default (Skipped)"
+    }
+} catch {
+    $uninstallationResults.AppData = "Error: $($_.Exception.Message)"
+}
+
 # Summary
 Write-Host "`n--- Uninstallation Summary ---" -ForegroundColor Cyan
 Write-Host "Context Menu:   $($uninstallationResults.ContextMenu)"
@@ -151,6 +199,7 @@ Write-Host "Desktop Shortcut: $($uninstallationResults.Shortcut)"
 Write-Host "System PATH:    $($uninstallationResults.PATH)"
 Write-Host "Kompresso-chan: $($uninstallationResults.KompressoChan)"
 Write-Host "HandBrakeCLI:   $($uninstallationResults.HandBrakeCLI)"
+Write-Host "AppData/Config: $($uninstallationResults.AppData)"
 
 Write-Host "`nUninstallation Complete!" -ForegroundColor Yellow
 

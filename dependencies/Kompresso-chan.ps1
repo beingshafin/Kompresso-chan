@@ -60,6 +60,59 @@ function Resolve-LogMode {
         Default { return @{ Session = $false; Folder = $false } }
     }
 }
+$resolutions = @(
+    [PSCustomObject]@{ Id = 1; Label = "Original"; HandBrakeScale = $null }
+    [PSCustomObject]@{ Id = 2; Label = "4K";       HandBrakeScale = "2160" }
+    [PSCustomObject]@{ Id = 3; Label = "1440p";    HandBrakeScale = "1440" }
+    [PSCustomObject]@{ Id = 4; Label = "1080p";    HandBrakeScale = "1080" }
+    [PSCustomObject]@{ Id = 5; Label = "720p";     HandBrakeScale = "720" }
+    [PSCustomObject]@{ Id = 6; Label = "480p";     HandBrakeScale = "480" }
+)
+
+$qualityPresets = @(
+    [PSCustomObject]@{ Id = 1; Label = "VeryFast";    EncoderPreset = "veryfast";  RF = 24 }
+    [PSCustomObject]@{ Id = 2; Label = "Fast";        EncoderPreset = "fast";      RF = 22 }
+    [PSCustomObject]@{ Id = 3; Label = "Balanced";    EncoderPreset = "medium";    RF = 20 }
+    [PSCustomObject]@{ Id = 4; Label = "HQ";          EncoderPreset = "slow";      RF = 18 }
+    [PSCustomObject]@{ Id = 5; Label = "SuperHQ";     EncoderPreset = "slower";    RF = 16 }
+)
+
+function Resolve-Resolution {
+    param([string]$value)
+    $id = $value -as [int]
+    if ($id -ne $null) {
+        if ($id -lt 1 -or $id -gt 6) { return $null }
+        return $resolutions | Where-Object { $_.Id -eq $id }
+    }
+    return $resolutions | Where-Object { $_.Label.ToLower() -eq $value.ToLower() }
+}
+
+function Resolve-Quality {
+    param([string]$value)
+    $id = $value -as [int]
+    if ($id -ne $null) {
+        if ($id -lt 1 -or $id -gt 5) { return $null }
+        return $qualityPresets | Where-Object { $_.Id -eq $id }
+    }
+    return $qualityPresets | Where-Object { $_.Label.ToLower() -eq $value.ToLower() }
+}
+
+function Resolve-Fps {
+    param([string]$value)
+    if ($value -eq "1" -or $value.ToLower() -eq "original") { return @{ Fps = "Original"; Custom = $null } }
+    $v = $value -as [int]
+    if ($v -ne $null) {
+        if ($v -lt 1) { return $null }
+        return @{ Fps = $v; Custom = $v }
+    }
+    $v2 = $value -as [double]
+    if ($v2 -ne $null) {
+        $v = [double]$value
+        if ($v -lt 1) { return $null }
+        return @{ Fps = $v; Custom = $v }
+    }
+    return $null
+}
 
 function Get-ConfigPath {
     $configDir = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Kompresso-chan'
@@ -68,37 +121,91 @@ function Get-ConfigPath {
 
 function Get-Defaults {
     $configPath = Get-ConfigPath
-    $defaultConfig = @{
-        resolution = "1"
-        fps        = "1"
-        quality    = "1"
-        mode       = "cascade"
+    $defaultConfig = [ordered]@{
+        resolution = "original"
+        fps        = "original"
+        quality    = "veryfast"
+        mode       = "mirror"
         smart      = $false
         shutdown   = $false
         log        = "both"
     }
-    if (Test-Path $configPath) {
-        try {
-            $content = Get-Content $configPath -Raw
-            $parsed = $content | ConvertFrom-Json
-            $config = @{}
-            foreach ($prop in $parsed.PSObject.Properties) {
-                $config[$prop.Name] = $prop.Value
-            }
-            foreach ($key in $defaultConfig.Keys) {
-                if (-not $config.ContainsKey($key)) {
-                    $config[$key] = $defaultConfig[$key]
-                }
-            }
-            return $config
-        } catch {
-            Save-Defaults -config $defaultConfig
-            return $defaultConfig
-        }
-    } else {
+
+    # If config file doesn't exist, create it with defaults and return
+    if (-not (Test-Path $configPath)) {
         Save-Defaults -config $defaultConfig
         return $defaultConfig
     }
+
+    # Config file exists - read it and use its values
+    $config = [ordered]@{}
+
+    # Start with defaults, then override with whatever is in the config file
+    foreach ($key in $defaultConfig.Keys) {
+        $config[$key] = $defaultConfig[$key]
+    }
+
+    try {
+        $content = Get-Content $configPath -Raw -ErrorAction Stop
+        $parsed = $content | ConvertFrom-Json -ErrorAction Stop
+        foreach ($prop in $parsed.PSObject.Properties) {
+            $config[$prop.Name] = $prop.Value
+        }
+    } catch {
+        # If parsing fails, return defaults without overwriting the file
+        return $defaultConfig
+    }
+
+    # Normalize resolution: accept any string value as-is (trust the config)
+    $resValue = [string]$config.resolution
+    $validResolutions = @("original", "4k", "1440p", "1080p", "720p", "480p")
+    $resValid = $false
+    foreach ($v in $validResolutions) { if ($resValue -eq $v) { $resValid = $true; break } }
+    if (-not $resValid) {
+        $resId = $resValue -as [int]
+        if ($resId -ge 1 -and $resId -le 6) {
+            $config.resolution = ($resolutions | Where-Object { $_.Id -eq $resId }).Label.ToLower()
+        } else {
+            $config.resolution = $defaultConfig.resolution
+        }
+    }
+
+    # Normalize quality: accept any string value as-is (trust the config)
+    $qualValue = [string]$config.quality
+    $validQualities = @("veryfast", "fast", "balanced", "hq", "superhq")
+    $qualValid = $false
+    foreach ($v in $validQualities) { if ($qualValue -eq $v) { $qualValid = $true; break } }
+    if (-not $qualValid) {
+        $qualId = $qualValue -as [int]
+        if ($qualId -ge 1 -and $qualId -le 5) {
+            $config.quality = ($qualityPresets | Where-Object { $_.Id -eq $qualId }).Label.ToLower()
+        } else {
+            $config.quality = $defaultConfig.quality
+        }
+    }
+
+    # Normalize FPS
+    if ([string]$config.fps -eq "1") { $config.fps = "original" }
+
+    # Normalize mode
+    $modeValue = [string]$config.mode
+    $validModes = @("replace", "cascade", "mirror")
+    $modeValid = $false
+    foreach ($v in $validModes) { if ($modeValue -eq $v) { $modeValid = $true; break } }
+    if (-not $modeValid) {
+        $config.mode = $defaultConfig.mode
+    }
+
+    # Normalize log
+    $logValue = [string]$config.log
+    $validLogs = @("session", "folder", "both", "none")
+    $logValid = $false
+    foreach ($v in $validLogs) { if ($logValue -eq $v) { $logValid = $true; break } }
+    if (-not $logValid) {
+        $config.log = $defaultConfig.log
+    }
+
+    return $config
 }
 
 function Save-Defaults {
@@ -108,7 +215,47 @@ function Save-Defaults {
     if (-not (Test-Path $configDir)) {
         New-Item -ItemType Directory -Path $configDir -Force | Out-Null
     }
-    $config | ConvertTo-Json | Out-File -LiteralPath $configPath -Encoding utf8
+    $ordered = [ordered]@{
+        resolution = $config.resolution
+        fps        = $config.fps
+        quality    = $config.quality
+        mode       = $config.mode
+        smart      = $config.smart
+        shutdown   = $config.shutdown
+        log        = $config.log
+    }
+    $ordered | ConvertTo-Json | Out-File -LiteralPath $configPath -Encoding utf8
+}
+
+
+function IdToLabel {
+    param([string]$type, [string]$value)
+    if ($type -eq "resolution") {
+        $res = Resolve-Resolution -value $value
+        if ($res) { return $res.Label.ToLower() }
+        return "original"
+    }
+    if ($type -eq "quality") {
+        $qual = Resolve-Quality -value $value
+        if ($qual) { return $qual.Label.ToLower() }
+        return "veryfast"
+    }
+    return $value
+}
+
+function LabelToId {
+    param([string]$type, [string]$value)
+    if ($type -eq "resolution") {
+        $res = Resolve-Resolution -value $value
+        if ($res) { return $res.Id.ToString() }
+        return "1"
+    }
+    if ($type -eq "quality") {
+        $qual = Resolve-Quality -value $value
+        if ($qual) { return $qual.Id.ToString() }
+        return "1"
+    }
+    return $value
 }
 
 $defaults = Get-Defaults
@@ -127,50 +274,111 @@ if ($PSBoundParameters.ContainsKey('Log')) {
 if ($Config) {
     $configArgs = $PSBoundParameters.Keys | Where-Object { $_ -ne 'Config' }
     if ($configArgs.Count -gt 0 -or ($Path -ne "")) {
-        Write-Host "  ERROR: -config must be used alone." -ForegroundColor Red
+        Write-Host "  ERROR: --config must be used alone." -ForegroundColor Red
         exit
     }
     Write-Host -NoNewline "$([char]27)[2J$([char]27)[H"
-    Write-Host "
-   __ __
-  / //_/__  __ _  ___  _______ ___ ___ ___  ____
- / ,< / _ \/  ' \/ _ \/ __/ -_|_-<(_-</ _ \/___/
-/_/|_|\___/_/_/_/ .__/_/  \__/___/___/\___/
-               /_/         v$Version
-" -ForegroundColor Cyan
-    Write-Host "  CONFIGURE DEFAULTS" -ForegroundColor Cyan
-    Write-Host "  ===========================" -ForegroundColor Cyan
-    Write-Host ""
 
-    Write-Host "  Default Resolution:"
-    Write-Host "  1) Original  2) 4K  3) 1440p  4) 1080p  5) 720p  6) 480p"
+    function Get-ResLine {
+        $line = ""
+        for ($i = 1; $i -le 6; $i++) {
+            $label = ($resolutions | Where-Object { $_.Id -eq $i }).Label
+            $resLabel = $label.ToLower()
+            $marker = if ($defaults.resolution -eq $resLabel) { " *" } else { "" }
+            $line += "[$i] $label$marker"
+            if ($i -lt 6) { $line += "   " }
+        }
+        return $line
+    }
+
+    function Get-QualLine {
+        $line = ""
+        for ($i = 1; $i -le 5; $i++) {
+            $label = ($qualityPresets | Where-Object { $_.Id -eq $i }).Label
+            $qualLabel = $label.ToLower()
+            $marker = if ($defaults.quality -eq $qualLabel) { " *" } else { "" }
+            $line += "[$i] $label$marker"
+            if ($i -lt 5) { $line += "   " }
+        }
+        return $line
+    }
+
+    function Get-ModeLine {
+        $line = ""
+        $modes = @("Replace", "Cascade", "Mirror")
+        for ($i = 1; $i -le 3; $i++) {
+            $marker = if ($defaults.mode -eq $modes[$i-1].ToLower()) { " *" } else { "" }
+            $line += "[$i] $($modes[$i-1])$marker"
+            if ($i -lt 3) { $line += "   " }
+        }
+        return $line
+    }
+
+    function Get-LogLine {
+        $line = ""
+        $logs = @("Session", "Folder", "Both", "None")
+        for ($i = 1; $i -le 4; $i++) {
+            $marker = if ($defaults.log -eq $logs[$i-1].ToLower()) { " *" } else { "" }
+            $line += "[$i] $($logs[$i-1])$marker"
+            if ($i -lt 4) { $line += "   " }
+        }
+        return $line
+    }
+
+    function Get-FpsHint {
+        if ($defaults.fps -eq "1" -or $defaults.fps -eq "original") {
+            return "Enter a Number or use 1 for Original (current: Original*)"
+        } else {
+            return "Enter a Number or use 1 for Original (current: $($defaults.fps)*)"
+        }
+    }
+
+    $configPath = Get-ConfigPath
+
+    Write-Host "KOMPRESSO-CHAN DEFAULT SETUP"
+    Write-Host ""
+    Write-Host "Config File"
+    Write-Host "  $configPath"
+    Write-Host "  (You can also edit this file manually.)"
+    Write-Host ""
+    Write-Host "Press ESC to exit without saving."
+    Write-Host "* = current default"
+    Write-Host ""
+    Write-Host "--------------------------------------------------"
+    Write-Host ""
+    Write-Host "VIDEO"
+    Write-Host ""
+    Write-Host "Resolution"
+    Write-Host "  $(Get-ResLine)"
     do {
         Write-Host -NoNewline "  > "
         $resInput = Read-Host
+        if ($resInput.ToLower() -eq "esc") { exit }
         if ($resInput -eq "") { break }
         $resInt = $resInput -as [int]
         if ($resInt -ge 1 -and $resInt -le 6) {
-            $defaults.resolution = $resInput
+            $defaults.resolution = ($resolutions | Where-Object { $_.Id -eq $resInt }).Label.ToLower()
             break
         }
         $resLower = $resInput.ToLower()
         $match = @("original","4k","1440p","1080p","720p","480p") | Where-Object { $_ -eq $resLower }
         if ($match) {
-            $defaults.resolution = @("1","2","3","4","5","6")[@("original","4k","1440p","1080p","720p","480p").IndexOf($resLower)]
+            $defaults.resolution = $resLower
             break
         }
         Write-Host "  Invalid choice." -ForegroundColor Yellow
     } while ($true)
 
     Write-Host ""
-    Write-Host "  Default FPS:"
-    Write-Host "  1) Original  2) custom (type: number of fps)"
+    Write-Host "FPS"
+    Write-Host "  $(Get-FpsHint)"
     do {
         Write-Host -NoNewline "  > "
         $fpsInput = Read-Host
+        if ($fpsInput.ToLower() -eq "esc") { exit }
         if ($fpsInput -eq "") { break }
         if ($fpsInput -eq "1") {
-            $defaults.fps = "1"
+            $defaults.fps = "original"
             break
         }
         $fpsVal = $fpsInput -as [double]
@@ -182,32 +390,38 @@ if ($Config) {
     } while ($true)
 
     Write-Host ""
-    Write-Host "  Default Quality:"
-    Write-Host "  1) VeryFast  2) Fast  3) Balanced  4) HQ  5) SuperHQ"
+    Write-Host "Quality Preset"
+    Write-Host "  $(Get-QualLine)"
     do {
         Write-Host -NoNewline "  > "
         $qualInput = Read-Host
+        if ($qualInput.ToLower() -eq "esc") { exit }
         if ($qualInput -eq "") { break }
         $qualInt = $qualInput -as [int]
         if ($qualInt -ge 1 -and $qualInt -le 5) {
-            $defaults.quality = $qualInput
+            $defaults.quality = ($qualityPresets | Where-Object { $_.Id -eq $qualInt }).Label.ToLower()
             break
         }
         $qualLower = $qualInput.ToLower()
         $match = @("veryfast","fast","balanced","hq","superhq") | Where-Object { $_ -eq $qualLower }
         if ($match) {
-            $defaults.quality = @("1","2","3","4","5")[@("veryfast","fast","balanced","hq","superhq").IndexOf($qualLower)]
+            $defaults.quality = $qualLower
             break
         }
         Write-Host "  Invalid choice." -ForegroundColor Yellow
     } while ($true)
 
     Write-Host ""
-    Write-Host "  Default Mode:"
-    Write-Host "  1) Replace  2) Cascade  3) Mirror"
+    Write-Host "--------------------------------------------------"
+    Write-Host ""
+    Write-Host "OUTPUT"
+    Write-Host ""
+    Write-Host "Save Mode"
+    Write-Host "  $(Get-ModeLine)"
     do {
         Write-Host -NoNewline "  > "
         $modeInput = Read-Host
+        if ($modeInput.ToLower() -eq "esc") { exit }
         if ($modeInput -eq "") { break }
         $modeLower = $modeInput.ToLower()
         $modeChoice = switch ($modeLower) {
@@ -227,20 +441,43 @@ if ($Config) {
     } while ($true)
 
     Write-Host ""
-    Write-Host -NoNewline "  Smart mode by default? [y/N]: "
+    Write-Host "Smart Mode"
+    Write-Host "  Skip replacement if compressed file is larger."
+    $smartCurrent = if ($defaults.smart) { "[Y/n]*" } else { "[y/N]" }
+    Write-Host -NoNewline "  $smartCurrent > "
     $smartInput = Read-Host
-    $defaults.smart = ($smartInput.ToLower() -eq "y")
-
-    Write-Host -NoNewline "  Shutdown by default? [y/N]: "
-    $shutInput = Read-Host
-    $defaults.shutdown = ($shutInput.ToLower() -eq "y")
+    if ($smartInput.ToLower() -eq "esc") { exit }
+    if ($smartInput -eq "") {
+    } elseif ($smartInput.ToLower() -eq "y") {
+        $defaults.smart = $true
+    } else {
+        $defaults.smart = $false
+    }
 
     Write-Host ""
-    Write-Host "  Default Log Mode:"
-    Write-Host "  1) Session  2) Folder  3) Both  4) None"
+    Write-Host "Shutdown After Finish"
+    $shutCurrent = if ($defaults.shutdown) { "[Y/n]*" } else { "[y/N]" }
+    Write-Host -NoNewline "  $shutCurrent > "
+    $shutInput = Read-Host
+    if ($shutInput.ToLower() -eq "esc") { exit }
+    if ($shutInput -eq "") {
+    } elseif ($shutInput.ToLower() -eq "y") {
+        $defaults.shutdown = $true
+    } else {
+        $defaults.shutdown = $false
+    }
+
+    Write-Host ""
+    Write-Host "--------------------------------------------------"
+    Write-Host ""
+    Write-Host "LOGGING"
+    Write-Host ""
+    Write-Host "Log Mode"
+    Write-Host "  $(Get-LogLine)"
     do {
         Write-Host -NoNewline "  > "
         $logInput = Read-Host
+        if ($logInput.ToLower() -eq "esc") { exit }
         if ($logInput -eq "") { break }
         $logLower = $logInput.ToLower()
         $logChoice = switch ($logLower) {
@@ -265,11 +502,17 @@ if ($Config) {
         Write-Host "  Invalid choice." -ForegroundColor Yellow
     } while ($true)
 
+    Write-Host ""
+    Write-Host "--------------------------------------------------"
+
     Save-Defaults -config $defaults
     Write-Host ""
-    Write-Host "  Defaults saved to: $(Get-ConfigPath)" -ForegroundColor Green
+    Write-Host "Saved Successfully"
     Write-Host ""
-    Write-Host "  Press any key to exit..." -ForegroundColor Yellow
+    Write-Host "Config updated:"
+    Write-Host "  $configPath"
+    Write-Host ""
+    Write-Host "Press any key to exit..." -ForegroundColor Yellow
     while ($Host.UI.RawUI.KeyAvailable) { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") }
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     exit
@@ -305,7 +548,7 @@ if ($Help -or $Path -eq "--help" -or $Path -eq "-help" -or $Path -eq "-h" -or $P
     Write-Host "    -l, -log      Log mode: session(s), folder(f), both(b), none(n). Default: both"
     Write-Host "    -quick        Skip all prompts, use defaults (append :y/:n or y/n)"
     Write-Host "    -smart        Replace/Mirror: skip if compressed is larger (append :y/:n or y/n)"
-    Write-Host "    -config       Open interactive config menu to set persistent defaults"
+    Write-Host "    --config      Open interactive config menu to set persistent defaults"
     Write-Host "    Note: Defaults stored in %APPDATA%\Kompresso-chan\config.json"
     Write-Host ""
     Write-Host "  RESOLUTION OPTIONS:" -ForegroundColor White
@@ -319,6 +562,7 @@ if ($Help -or $Path -eq "--help" -or $Path -eq "-help" -or $Path -eq "-h" -or $P
     Write-Host "  FPS OPTIONS:" -ForegroundColor White
     Write-Host "    1             - Keep source framerate"
     Write-Host "    <number>      - Set custom FPS (e.g. 30, 60, 23.976)"
+    Write-Host "    Note: If configured FPS exceeds source framerate, it will be capped automatically."
     Write-Host ""
     Write-Host "  QUALITY OPTIONS:" -ForegroundColor White
     Write-Host "    1, veryfast   - Fast encoding, smaller file"
@@ -425,63 +669,6 @@ if (!(Test-Path $handbrake)) {
     }
 }
 
-# ---------------------------------------------------------------
-#  PRESET MENU
-# ---------------------------------------------------------------
-$resolutions = @(
-    [PSCustomObject]@{ Id = 1; Label = "Original"; HandBrakeScale = $null }
-    [PSCustomObject]@{ Id = 2; Label = "4K";       HandBrakeScale = "2160" }
-    [PSCustomObject]@{ Id = 3; Label = "1440p";    HandBrakeScale = "1440" }
-    [PSCustomObject]@{ Id = 4; Label = "1080p";    HandBrakeScale = "1080" }
-    [PSCustomObject]@{ Id = 5; Label = "720p";     HandBrakeScale = "720" }
-    [PSCustomObject]@{ Id = 6; Label = "480p";     HandBrakeScale = "480" }
-)
-
-$qualityPresets = @(
-    [PSCustomObject]@{ Id = 1; Label = "VeryFast";    EncoderPreset = "veryfast";  RF = 24 }
-    [PSCustomObject]@{ Id = 2; Label = "Fast";        EncoderPreset = "fast";      RF = 22 }
-    [PSCustomObject]@{ Id = 3; Label = "Balanced";    EncoderPreset = "medium";    RF = 20 }
-    [PSCustomObject]@{ Id = 4; Label = "HQ";          EncoderPreset = "slow";      RF = 18 }
-    [PSCustomObject]@{ Id = 5; Label = "SuperHQ";     EncoderPreset = "slower";    RF = 16 }
-)
-
-function Resolve-Resolution {
-    param([string]$value)
-    $id = $value -as [int]
-    if ($id -ne $null) {
-        if ($id -lt 1 -or $id -gt 6) { return $null }
-        return $resolutions | Where-Object { $_.Id -eq $id }
-    }
-    return $resolutions | Where-Object { $_.Label.ToLower() -eq $value.ToLower() }
-}
-
-function Resolve-Quality {
-    param([string]$value)
-    $id = $value -as [int]
-    if ($id -ne $null) {
-        if ($id -lt 1 -or $id -gt 5) { return $null }
-        return $qualityPresets | Where-Object { $_.Id -eq $id }
-    }
-    return $qualityPresets | Where-Object { $_.Label.ToLower() -eq $value.ToLower() }
-}
-
-function Resolve-Fps {
-    param([string]$value)
-    if ($value -eq "1") { return @{ Fps = "Original"; Custom = $null } }
-    $v = $value -as [int]
-    if ($v -ne $null) {
-        if ($v -lt 1) { return $null }
-        return @{ Fps = $v; Custom = $v }
-    }
-    $v2 = $value -as [double]
-    if ($v2 -ne $null) {
-        $v = [double]$value
-        if ($v -lt 1) { return $null }
-        return @{ Fps = $v; Custom = $v }
-    }
-    return $null
-}
-
 $useCliPreset = ($Res -or $Fps -or $Qual -or $Preset -or $doQuick)
 
 if ($doQuick) {
@@ -542,41 +729,54 @@ Write-Host "  KOMPRESSO-CHAN"
 Write-Host ""
 Write-Host "  Select options:"
 Write-Host ""
-Write-Host "  " -NoNewline
-Write-Host "--------------------"
+Write-Host "  --------------------------------------------------"
 Write-Host ""
-Write-Host "  Resolution:"
+
 $resLine = ""
 for ($i = 1; $i -le 6; $i++) {
     $label = ($resolutions | Where-Object { $_.Id -eq $i }).Label
-    $marker = if ($defaults.resolution -eq $i.ToString()) { "*" } else { "" }
-    $resLine += "$i) $label$marker  "
+    $resLabel = $label.ToLower()
+    $marker = if ($defaults.resolution -eq $resLabel) { " *" } else { "" }
+    $resLine += "[$i] $label$marker"
+    if ($i -lt 6) { $resLine += "   " }
 }
+Write-Host "  Resolution"
 Write-Host "  $resLine"
 Write-Host ""
-Write-Host "  FPS:"
-$defaultFpsIsOriginal = ($defaults.fps -eq "1")
-Write-Host "  1) Original$(if ($defaultFpsIsOriginal) {'*'})  2) custom (type: number of fps)"
+
+if ($defaults.fps -eq "1" -or $defaults.fps -eq "original") {
+    $fpsHint = "Enter a Number or use 1 for Original (current: Original*)"
+} else {
+    $fpsHint = "Enter a Number or use 1 for Original (current: $($defaults.fps)*)"
+}
+Write-Host "  FPS"
+Write-Host "  $fpsHint"
 Write-Host ""
-Write-Host "  Quality:"
+
 $qualLine = ""
 for ($i = 1; $i -le 5; $i++) {
     $label = ($qualityPresets | Where-Object { $_.Id -eq $i }).Label
-    $marker = if ($defaults.quality -eq $i.ToString()) { "*" } else { "" }
-    $qualLine += "$i) $label$marker  "
+    $qualLabel = $label.ToLower()
+    $marker = if ($defaults.quality -eq $qualLabel) { " *" } else { "" }
+    $qualLine += "[$i] $label$marker"
+    if ($i -lt 5) { $qualLine += "   " }
 }
+Write-Host "  Quality Preset"
 Write-Host "  $qualLine"
 Write-Host ""
-Write-Host "  " -NoNewline
-Write-Host "--------------------"
+Write-Host "  --------------------------------------------------"
 Write-Host ""
+
+$defaultResId = (Resolve-Resolution -value $defaults.resolution).Id.ToString()
+$defaultQualId = (Resolve-Quality -value $defaults.quality).Id.ToString()
 
 do {
     Write-Host -NoNewline "  Resolution FPS Quality (eg: 3 60 2) : "
     $presetInput = Read-Host
     
     if ($presetInput.Trim() -eq "") {
-        $presetInput = "$($defaults.resolution) $($defaults.fps) $($defaults.quality)"
+        $defaultFpsValue = if ($defaults.fps -eq "original") { "1" } else { $defaults.fps }
+        $presetInput = "$defaultResId $defaultFpsValue $defaultQualId"
     }
     
     $parts = $presetInput.Trim() -split '\s+'
@@ -761,10 +961,14 @@ if ($Mode) {
         "mirror"  { "3" }
         Default   { "2" }
     }
-    Write-Host "  1. Replace$(if ($defaultModeNum -eq '1') {'*'}) (Overwrite original)"
-    Write-Host "  2. Cascade$(if ($defaultModeNum -eq '2') {'*'}) (Create x_kompressochan.mp4)"
+    $effectiveDefault = $defaultModeNum
+    if ($defaultModeNum -eq "3" -and -not $hasFolder) {
+        $effectiveDefault = "2"
+    }
+    Write-Host "  1. Replace$(if ($effectiveDefault -eq '1') {'*'}) (Overwrite original)"
+    Write-Host "  2. Cascade$(if ($effectiveDefault -eq '2') {'*'}) (Create x_kompressochan.mp4)"
     if ($hasFolder) {
-        Write-Host "  3. Mirror$(if ($defaultModeNum -eq '3') {'*'})  (New folder structure for folders)"
+        Write-Host "  3. Mirror$(if ($effectiveDefault -eq '3') {'*'})  (New folder structure for folders)"
     }
     Write-Host ""
 
@@ -774,7 +978,7 @@ if ($Mode) {
         Write-Host -NoNewline "  "
         $modeChoiceInput = Read-Host "Enter mode (1-$maxMode)"
         if ($modeChoiceInput -eq "") { 
-            $modeChoice = $defaultModeNum
+            $modeChoice = $effectiveDefault
         } else { 
             $modeChoice = $modeChoiceInput 
         }
@@ -922,7 +1126,7 @@ if ($shouldCreateSessionLog) {
     $logDirForSession = Split-Path $script:inputListPath -Parent
     
     # Special case: If the input list is the system one, put the session log next to the first actual item
-    $systemInputPath = Join-Path ([Environment]::GetEnvironmentVariable('TEMP')) 'kompresso_input.txt'
+    $systemInputPath = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Kompresso-chan\kompresso_input.txt'
     if ($script:inputListPath -eq $systemInputPath -and $inputItems.Count -gt 0) {
         $logDirForSession = Split-Path $inputItems[0].FullName -Parent
     }

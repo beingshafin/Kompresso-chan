@@ -8,7 +8,11 @@ param(
 # Resolve the Kompresso-chan executable next to this wrapper.
 $scriptDir = Split-Path -Parent $PSCommandPath
 $kompressoExe = Join-Path $scriptDir 'komchan.exe'
-$f = Join-Path ([Environment]::GetEnvironmentVariable('TEMP')) 'kompresso_input.txt'
+$configDir = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Kompresso-chan'
+if (-not (Test-Path $configDir)) {
+    New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+}
+$f = Join-Path $configDir 'kompresso_input.txt'
 
 # Build arguments for komchan.exe
 $exeArgs = @($f)
