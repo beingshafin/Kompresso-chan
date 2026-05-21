@@ -147,7 +147,7 @@ When running, the console shows a live overview of current statistics, total que
 ### ⚙️ Persistent Defaults
 Set your preferred defaults once and never configure them again:
 ```powershell
-komchan -config
+komchan --config
 ```
 This launches an interactive wizard that saves your preferences to `%APPDATA%\Kompresso-chan\config.json`. Every subsequent run uses these as defaults — shown with `*` markers in the interactive menu. You can still override them per-run with CLI flags.
 
@@ -177,7 +177,7 @@ komchan --uninstall         - Uninstall Kompresso-chan from your system.
 | `-smart` | — | Replace/Mirror mode: skip if compressed is larger. Replace skips replacement; Mirror copies original instead. Append `:y/:n` or `y/n` to toggle. Prompts interactively if not passed. |
 | `-shut` | — | Auto-shutdown PC after all encoding finishes. Append `:y/:n` or `y/n` to toggle. |
 | `-l` | `-log` | Log mode: `session`/`s` (session only), `folder`/`f` (folder only), `both`/`b` (both), `none`/`n` (no logs). Default: `both`. Session logs are only generated for `.txt` batch lists. |
-| `-config` | — | Open interactive config menu to set persistent defaults. Stored in `%APPDATA%\Kompresso-chan\config.json`. |
+| `--config` | — | Open interactive config menu to set persistent defaults. Stored in `%APPDATA%\Kompresso-chan\config.json`. |
 
 ### Resolution Options
 
@@ -194,8 +194,11 @@ komchan --uninstall         - Uninstall Kompresso-chan from your system.
 
 | Value | Behavior |
 | :--- | :--- |
-| `1` | Keep source framerate |
+| `1` / `original` | Keep source framerate |
 | `<number>` | Set custom FPS (e.g. `30`, `60`, `23.976`) |
+
+> [!NOTE]
+> If configured FPS exceeds the source video's framerate, HandBrake will automatically cap it to the source framerate.
 
 ### Quality Options
 
