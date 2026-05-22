@@ -36,7 +36,7 @@ param (
     [switch]$Config
 )
 
-$Version = "1.0.0-alpha"
+$Version = "1.0.0-stable"
 
 function Resolve-BoolFlag {
     param([string]$value, [bool]$wasPassed)
