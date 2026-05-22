@@ -4,9 +4,16 @@
 
 **Kompresso-chan** is a video compressing utility for Windows I built to solve a simple but frustrating problem: my hard drive was constantly running out of space, and I was tired of opening heavy video software just to downscale screen recordings. To get a fast, lightweight context-menu tool, I cooked up this PowerShell wrapper around the legendary **HandBrakeCLI** engine. Instead of hogging resources, it lets you right-click any video file or folder, choose from 24 optimized presets (supporting AV1, HEVC, and H.264), and let it run cleanly in the background. It shrunk my own raw captures by up to 90% while keeping them looking great, so I decided to package it with a simple installer to help others reclaim their disk space too!
 
-
 ㅤ
 <br clear="left">
+
+## 🎥 Demo Videos
+
+<a href="https://youtu.be/jL0qjA_t8Rw" target="_blank" rel="noreferrer noopener">
+  <img src="https://img.youtube.com/vi/jL0qjA_t8Rw/maxresdefault.jpg" alt="Watch the English demo" />
+</a>
+
+- For bangla demo click here -> https://youtu.be/dtxv_1hLR-8
 
 ---
 
@@ -37,6 +44,7 @@ Here are the key things I wanted to make sure the tool handles well:
 I wanted to make the setup as frictionless as possible, so I built simple C-based wrappers to handle the heavy lifting:
 
 ### Method 1: The Easiest Way (Recommended)
+
 1. **Download/Clone** this repository to a folder of your choice (e.g., `C:\Tools\Kompresso-chan`).
 2. Find `install.exe` in the root folder.
 3. **Right-click `install.exe`** and select **Run as Administrator**.
@@ -47,6 +55,7 @@ I wanted to make the setup as frictionless as possible, so I built simple C-base
    - Place a handy desktop shortcut for drag-and-drop batching.
 
 ### Method 2: Manual PowerShell Setup
+
 1. Open PowerShell as **Administrator**.
 2. Navigate into the `dependencies` directory.
 3. Run the installer script directly:
@@ -62,7 +71,9 @@ I wanted to make the setup as frictionless as possible, so I built simple C-base
 ## 🚀 How I Use It
 
 ### 1. The Right-Click Menu
+
 This is my everyday go-to:
+
 - Select one or more files/folders, right-click, and choose **Compress with Kompresso**.
 - Pick your workflow:
   - **Quick Replace / Quick Cascade / Quick Mirror** — instantly compresses with default settings (Original res, Original FPS, VeryFast quality).
@@ -77,7 +88,9 @@ This is my everyday go-to:
 </p>
 
 ### 2. The Terminal (CLI)
+
 For quick single commands, open any shell (CMD, PowerShell, or Windows Terminal) and type:
+
 ```powershell
 # Compress a single video file (interactive prompt, default: 1 1 1)
 komchan "D:\Movies\MyVideo.mp4"
@@ -133,22 +146,29 @@ komchan --help
 **Flags:** `-quick` (skip prompts), `-smart` (skip if larger), `-shut` (auto-shutdown), `-l`/`-log` (log mode: session/folder/both/none), `-m`/`-mode` (processing mode)
 
 ### 3. Drag-and-Drop Batch Lists
+
 For massive batch runs, I usually create a simple `.txt` file listing absolute file paths (one per line) and then drag-and-drop the file directly onto the desktop shortcut:
+
 ```powershell
 komchan "C:\Users\You\Desktop\my_batch_list.txt"
 ```
 
 ### 🖥️ Interactive Progress HUD
+
 When running, the console shows a live overview of current statistics, total queue progress, and HandBrake's progress updates:
+
 <p>
   <img src="dependencies/Assets/live-update.png" alt="Live Output Screen" width="700">
 </p>
 
 ### ⚙️ Persistent Defaults
+
 Set your preferred defaults once and never configure them again:
+
 ```powershell
 komchan --config
 ```
+
 This launches an interactive wizard that saves your preferences to `%APPDATA%\Kompresso-chan\config.json`. Every subsequent run uses these as defaults — shown with `*` markers in the interactive menu. You can still override them per-run with CLI flags.
 
 ---
@@ -158,6 +178,7 @@ This launches an interactive wizard that saves your preferences to `%APPDATA%\Ko
 Run `komchan --help` to see this in your terminal. Here's a quick breakdown of every flag:
 
 ### Basic Usage
+
 ```
 komchan [Path]              - Start compression for a file, folder, or .txt list.
 komchan --help, -h          - Show the help guide.
@@ -166,57 +187,57 @@ komchan --uninstall         - Uninstall Kompresso-chan from your system.
 
 ### Flags
 
-| Flag | Aliases | Description |
-| :--- | :--- | :--- |
-| `-r` | `-res` | Resolution: `1`/`original`, `2`/`4k`, `3`/`1440p`, `4`/`1080p`, `5`/`720p`, `6`/`480p` |
-| `-f` | `-fps` | FPS: `1` = keep original, or any number like `30`, `60`, `23.976` |
-| `-q` | `-qual` | Quality: `1`/`veryfast`, `2`/`fast`, `3`/`balanced`, `4`/`hq`, `5`/`superhq` |
-| `-m` | `-mode` | Processing mode: `replace`, `cascade`, or `mirror` (case-insensitive) |
-| `-preset` | `-p` | Single string combining res/fps/qual, e.g. `"1080p 60 fast"` |
-| `-quick` | — | Skip all prompts, use defaults. Append `:y/:n` or `y/n` to toggle. Combine with other flags to override. |
-| `-smart` | — | Replace/Mirror mode: skip if compressed is larger. Replace skips replacement; Mirror copies original instead. Append `:y/:n` or `y/n` to toggle. Prompts interactively if not passed. |
-| `-shut` | — | Auto-shutdown PC after all encoding finishes. Append `:y/:n` or `y/n` to toggle. |
-| `-l` | `-log` | Log mode: `session`/`s` (session only), `folder`/`f` (folder only), `both`/`b` (both), `none`/`n` (no logs). Default: `both`. Session logs are only generated for `.txt` batch lists. |
-| `--config` | — | Open interactive config menu to set persistent defaults. Stored in `%APPDATA%\Kompresso-chan\config.json`. |
+| Flag       | Aliases | Description                                                                                                                                                                           |
+| :--------- | :------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `-r`       | `-res`  | Resolution: `1`/`original`, `2`/`4k`, `3`/`1440p`, `4`/`1080p`, `5`/`720p`, `6`/`480p`                                                                                                |
+| `-f`       | `-fps`  | FPS: `1` = keep original, or any number like `30`, `60`, `23.976`                                                                                                                     |
+| `-q`       | `-qual` | Quality: `1`/`veryfast`, `2`/`fast`, `3`/`balanced`, `4`/`hq`, `5`/`superhq`                                                                                                          |
+| `-m`       | `-mode` | Processing mode: `replace`, `cascade`, or `mirror` (case-insensitive)                                                                                                                 |
+| `-preset`  | `-p`    | Single string combining res/fps/qual, e.g. `"1080p 60 fast"`                                                                                                                          |
+| `-quick`   | —       | Skip all prompts, use defaults. Append `:y/:n` or `y/n` to toggle. Combine with other flags to override.                                                                              |
+| `-smart`   | —       | Replace/Mirror mode: skip if compressed is larger. Replace skips replacement; Mirror copies original instead. Append `:y/:n` or `y/n` to toggle. Prompts interactively if not passed. |
+| `-shut`    | —       | Auto-shutdown PC after all encoding finishes. Append `:y/:n` or `y/n` to toggle.                                                                                                      |
+| `-l`       | `-log`  | Log mode: `session`/`s` (session only), `folder`/`f` (folder only), `both`/`b` (both), `none`/`n` (no logs). Default: `both`. Session logs are only generated for `.txt` batch lists. |
+| `--config` | —       | Open interactive config menu to set persistent defaults. Stored in `%APPDATA%\Kompresso-chan\config.json`.                                                                            |
 
 ### Resolution Options
 
-| Value | Label | Behavior |
-| :--- | :--- | :--- |
+| Value            | Label    | Behavior               |
+| :--------------- | :------- | :--------------------- |
 | `1` / `original` | Original | Keep source resolution |
-| `2` / `4k` | 4K | Scale to 2160p max |
-| `3` / `1440p` | 1440p | Scale to 1440p max |
-| `4` / `1080p` | 1080p | Scale to 1080p max |
-| `5` / `720p` | 720p | Scale to 720p max |
-| `6` / `480p` | 480p | Scale to 480p max |
+| `2` / `4k`       | 4K       | Scale to 2160p max     |
+| `3` / `1440p`    | 1440p    | Scale to 1440p max     |
+| `4` / `1080p`    | 1080p    | Scale to 1080p max     |
+| `5` / `720p`     | 720p     | Scale to 720p max      |
+| `6` / `480p`     | 480p     | Scale to 480p max      |
 
 ### FPS Options
 
-| Value | Behavior |
-| :--- | :--- |
-| `1` / `original` | Keep source framerate |
-| `<number>` | Set custom FPS (e.g. `30`, `60`, `23.976`) |
+| Value            | Behavior                                   |
+| :--------------- | :----------------------------------------- |
+| `1` / `original` | Keep source framerate                      |
+| `<number>`       | Set custom FPS (e.g. `30`, `60`, `23.976`) |
 
 > [!NOTE]
 > If configured FPS exceeds the source video's framerate, HandBrake will automatically cap it to the source framerate.
 
 ### Quality Options
 
-| Value | Label | Encoder Preset | RF |
-| :--- | :--- | :--- | :--- |
-| `1` / `veryfast` | VeryFast | veryfast | 24 |
-| `2` / `fast` | Fast | fast | 22 |
-| `3` / `balanced` | Balanced | medium | 20 |
-| `4` / `hq` | HQ | slow | 18 |
-| `5` / `superhq` | SuperHQ | slower | 16 |
+| Value            | Label    | Encoder Preset | RF  |
+| :--------------- | :------- | :------------- | :-- |
+| `1` / `veryfast` | VeryFast | veryfast       | 24  |
+| `2` / `fast`     | Fast     | fast           | 22  |
+| `3` / `balanced` | Balanced | medium         | 20  |
+| `4` / `hq`       | HQ       | slow           | 18  |
+| `5` / `superhq`  | SuperHQ  | slower         | 16  |
 
 ### Processing Modes
 
-| Value | Mode | Behavior |
-| :--- | :--- | :--- |
-| `1` / `replace` | Replace | Overwrite the original file with the compressed version. |
-| `2` / `cascade` | Cascade | Save as `original_kompressochan.mp4` in the same folder. |
-| `3` / `mirror` | Mirror | Recreate the folder structure for bulk processing. Falls back to cascade if only files are given. |
+| Value           | Mode    | Behavior                                                                                          |
+| :-------------- | :------ | :------------------------------------------------------------------------------------------------ |
+| `1` / `replace` | Replace | Overwrite the original file with the compressed version.                                          |
+| `2` / `cascade` | Cascade | Save as `original_kompressochan.mp4` in the same folder.                                          |
+| `3` / `mirror`  | Mirror  | Recreate the folder structure for bulk processing. Falls back to cascade if only files are given. |
 
 ---
 
@@ -224,28 +245,32 @@ komchan --uninstall         - Uninstall Kompresso-chan from your system.
 
 To cover different needs, I built three distinct ways to handle files:
 
-| Mode | What it does | Why I use it |
-| :--- | :--- | :--- |
-| **1. Replace** | Overwrites the original file with the compressed version. | When I just want to save raw disk space on long game captures and don't care about the original bitrates. |
-| **2. Cascade** | Saves the compressed file as `filename_kompressochan.mp4` in the same directory. | When I want to compare quality side-by-side or keep the original as a backup. |
-| **3. Mirror** | Recreates your source folder tree in a new directory named `Folder_kompressochan`. | When I want to compress an entire library of courses/shows while keeping subfolders, subtitles, and images untouched. |
+| Mode           | What it does                                                                       | Why I use it                                                                                                          |
+| :------------- | :--------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| **1. Replace** | Overwrites the original file with the compressed version.                          | When I just want to save raw disk space on long game captures and don't care about the original bitrates.             |
+| **2. Cascade** | Saves the compressed file as `filename_kompressochan.mp4` in the same directory.   | When I want to compare quality side-by-side or keep the original as a backup.                                         |
+| **3. Mirror**  | Recreates your source folder tree in a new directory named `Folder_kompressochan`. | When I want to compress an entire library of courses/shows while keeping subfolders, subtitles, and images untouched. |
 
 ---
 
 ## 📊 Analytics & Saving Logs
 
 I love seeing how much space I've reclaimed, so I built two logging formats depending on how the session is run:
+
 - **Folder Log (`compression_log.txt`)**: A static log saved directly in the destination folder.
 - **Session Log (`session_compression_log_YYYY-M-D-HH.mm.ss.txt`)**: A timestamped log created next to your batch list file when using `.txt` inputs.
 
 **Each log documents:**
+
 - The selected preset and mode.
 - Success/Failure status and elapsed time for each file.
 - **Final Summary**: Absolute disk space saved in MB/GB and compression ratio percentage.
 - **Interrupted Session Recovery**: If a long session gets interrupted, it prints the last incomplete file so you can resume exactly where you left off.
 
 ### 📈 Console Session Summary
+
 At the end of each run, it prints a clean breakdown of the total space saved to keep you updated:
+
 <p>
   <img src="dependencies/Assets/summary.png" alt="Console Summary Output" width="470">
 </p>
@@ -255,6 +280,7 @@ At the end of each run, it prints a clean breakdown of the total space saved to 
 ## 📤 How to Uninstall It
 
 If the tool isn't for you, I've made it simple to remove everything cleanly:
+
 1. Locate `uninstall.exe` in the root folder, right-click it, and run as **Administrator**.
 2. Alternatively, run `uninstall.ps1` from the `dependencies` folder using PowerShell (Admin).
 3. The script will safely remove context menu entries, global path variables, and program files.
@@ -267,4 +293,4 @@ If the tool isn't for you, I've made it simple to remove everything cleanly:
 - **PowerShell**: 5.1 or higher.
 - **Dependencies**: HandBrakeCLI (which is included in the package and managed for you).
 
-*Disclaimer: Since this is a personal project, it's provided "as-is". I've spent a lot of time making it stable, but I highly recommend backing up your critical videos before running **Replace** mode—just to be 100% safe! This tool is independent and not affiliated with the official HandBrake team.*
+_Disclaimer: Since this is a personal project, it's provided "as-is". I've spent a lot of time making it stable, but I highly recommend backing up your critical videos before running **Replace** mode—just to be 100% safe! This tool is independent and not affiliated with the official HandBrake team._
