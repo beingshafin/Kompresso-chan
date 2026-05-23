@@ -36,6 +36,7 @@ Here are the key things I wanted to make sure the tool handles well:
 - **😴 Post-Task Auto-Shutdown**: An optional setting to automatically shut down your PC after a long overnight queue finishes.
 - **💻 Native CLI Support**: If you prefer terminals like I do, you can run the compression directly via the global `komchan` command.
 - **⚡ Quick Compression Flag**: Use `-quick` from the CLI to skip all prompts and compress with defaults. Combine with other flags (e.g., `-quick -m replace -r 480p`) to override individual settings.
+- **🎞️ Broad Input Support**: Accepts common HandBrake source formats (MP4/M4V, MKV, AVI, MOV, MPEG/MPG, TS/MTS/M2TS, WMV, FLV, WebM, 3GP, VOB). **Output is always MP4** — replace mode renames non-MP4 sources to `.mp4`; cascade and mirror write `.mp4` files.
 
 ---
 

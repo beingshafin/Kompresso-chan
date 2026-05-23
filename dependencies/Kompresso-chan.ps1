@@ -77,6 +77,41 @@ $qualityPresets = @(
     [PSCustomObject]@{ Id = 5; Label = "SuperHQ";     EncoderPreset = "slower";    RF = 16 }
 )
 
+# HandBrake-supported input containers; output is always .mp4
+$script:SupportedVideoExtensions = @(
+    '.mp4', '.m4v', '.mkv', '.avi', '.mov', '.mpg', '.mpeg',
+    '.ts', '.mts', '.m2ts', '.wmv', '.flv', '.webm', '.3gp', '.vob'
+)
+
+function Test-IsSupportedVideoFile {
+    param($FileItem)
+    if (-not $FileItem.Extension) { return $false }
+    return $script:SupportedVideoExtensions -contains $FileItem.Extension.ToLower()
+}
+
+function Test-IsKompressoOutputArtifact {
+    param([string]$FileName)
+    return ($FileName -like "*.tmp.mp4" -or $FileName -like "*_kompressochan.mp4")
+}
+
+function Get-CascadeOutputPath {
+    param([string]$InputFile)
+    $dir = [System.IO.Path]::GetDirectoryName($InputFile)
+    $base = [System.IO.Path]::GetFileNameWithoutExtension($InputFile)
+    return [System.IO.Path]::Combine($dir, "${base}_kompressochan.mp4")
+}
+
+function Get-MirrorOutputPath {
+    param([string]$MirrorRoot, [string]$RelativePath)
+    $relMp4 = [System.IO.Path]::ChangeExtension($RelativePath, '.mp4')
+    return [System.IO.Path]::Combine($MirrorRoot, $relMp4)
+}
+
+function Get-ReplaceOutputFinalName {
+    param([string]$InputFile)
+    return [System.IO.Path]::GetFileName([System.IO.Path]::ChangeExtension($InputFile, '.mp4'))
+}
+
 function Resolve-Resolution {
     param([string]$value)
     $id = $value -as [int]
@@ -571,10 +606,13 @@ if ($Help -or $Path -eq "--help" -or $Path -eq "-help" -or $Path -eq "-h" -or $P
     Write-Host "    4, hq         - Slow encoding, high quality"
     Write-Host "    5, superhq    - Slowest encoding, best quality"
     Write-Host ""
+    Write-Host "  SUPPORTED INPUT FORMATS (output is always .mp4):" -ForegroundColor White
+    Write-Host "    mp4, m4v, mkv, avi, mov, mpg, mpeg, ts, mts, m2ts, wmv, flv, webm, 3gp, vob"
+    Write-Host ""
     Write-Host "  PROCESSING MODES:" -ForegroundColor White
-    Write-Host "    1, replace  - Overwrite the original file with the compressed version."
-    Write-Host "    2, cascade  - Save as 'original_kompressochan.mp4' in the same folder."
-    Write-Host "    3, mirror   - Recreate the folder structure for bulk processing."
+    Write-Host "    1, replace  - Overwrite the original with compressed .mp4 (extension updated if needed)."
+    Write-Host "    2, cascade  - Save as 'basename_kompressochan.mp4' in the same folder."
+    Write-Host "    3, mirror   - Recreate the folder structure for bulk processing (videos as .mp4)."
     Write-Host "    Note: If only file paths are given (no folders), mirror mode falls back to cascade."
     Write-Host ""
     Write-Host "  EXAMPLES:" -ForegroundColor White
@@ -1067,7 +1105,7 @@ if ($modeChoice -eq "3") {
             
             # 2. Copy non-video files
             Write-Host "  Copying non-video files..." -ForegroundColor Gray
-            Get-ChildItem -LiteralPath $item.FullName -Recurse -File | Where-Object { $_.Extension -ne ".mp4" -and $_.Name -notlike "*compression_log*.txt" } | ForEach-Object {
+            Get-ChildItem -LiteralPath $item.FullName -Recurse -File | Where-Object { -not (Test-IsSupportedVideoFile $_) -and $_.Name -notlike "*compression_log*.txt" } | ForEach-Object {
                 $rel = $_.FullName.Substring($item.FullName.Length).TrimStart("\")
                 $dest = Join-Path $mirrorRoot $rel
                 Copy-Item -LiteralPath $_.FullName -Destination $dest -Force
@@ -1088,7 +1126,9 @@ foreach ($rootObj in $inputItems) {
     if ($rootObj.PSIsContainer) { $inputFolderCount++ } else { $inputFileCount++ }
     if ($rootObj.PSIsContainer) {
         Write-Host "`n  Scanning: $($rootObj.FullName)" -ForegroundColor Gray
-        $found = Get-ChildItem -LiteralPath $rootObj.FullName -Recurse -File -Filter *.mp4 -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike "*.tmp.mp4" -and $_.Name -notlike "*_kompressochan.mp4" }
+        $found = Get-ChildItem -LiteralPath $rootObj.FullName -Recurse -File -ErrorAction SilentlyContinue | Where-Object {
+            (Test-IsSupportedVideoFile $_) -and -not (Test-IsKompressoOutputArtifact $_.Name)
+        }
         foreach ($f in $found) {
             if (!$seenFiles.ContainsKey($f.FullName)) {
                 $seenFiles[$f.FullName] = $true
@@ -1096,7 +1136,7 @@ foreach ($rootObj in $inputItems) {
             }
         }
     } else {
-        if ($rootObj.Extension -eq ".mp4") {
+        if ((Test-IsSupportedVideoFile $rootObj) -and -not (Test-IsKompressoOutputArtifact $rootObj.Name)) {
             if (!$seenFiles.ContainsKey($rootObj.FullName)) {
                 $seenFiles[$rootObj.FullName] = $true
                 $tasks += [PSCustomObject]@{ File = $rootObj; InputRoot = $rootObj }
@@ -1146,8 +1186,8 @@ Start Time     :  $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 }
 
 if ($tasks.Count -eq 0) {
-    Write-Host "  No .mp4 files found." -ForegroundColor Yellow
-    if ($sessionLogPath) { "No .mp4 files found." | Add-Content -LiteralPath $sessionLogPath }
+    Write-Host "  No supported video files found." -ForegroundColor Yellow
+    if ($sessionLogPath) { "No supported video files found." | Add-Content -LiteralPath $sessionLogPath }
     exit
 }
 
@@ -1158,12 +1198,12 @@ if ($script:inputListPath) {
 // list summary
 Folders      : $inputFolderCount
 Files        : $inputFileCount
-Total MP4    : $totalFiles
+Total Videos : $totalFiles
 "@
     Write-Host "`n  List Summary" -ForegroundColor Gray
     Write-Host "    Folders  : $inputFolderCount"
     Write-Host "    Files    : $inputFileCount"
-    Write-Host "    Total MP4: $totalFiles`n"
+    Write-Host "    Total Videos: $totalFiles`n"
     
     if ($sessionLogPath) { 
         $formattedListSummary | Add-Content -LiteralPath $sessionLogPath 
@@ -1247,18 +1287,18 @@ Start Time     :  $($now.ToString("yyyy-MM-dd HH:mm:ss"))
         $ps = $perLogStats[$currentLogPath]
         $ps.total++
         
-        # Determine Output Path
+        # Determine Output Path (always .mp4)
         if ($modeChoice -eq "2") {
-            $outputFile = $inputFile -replace '\.mp4$', '_kompressochan.mp4'
+            $outputFile = Get-CascadeOutputPath $inputFile
         }
         elseif ($modeChoice -eq "3") {
             if ($rootObj.PSIsContainer) {
                 $relativePath = $inputFile.Substring($rootObj.FullName.Length).TrimStart("\")
                 $mRoot = $mirrorMap[$rootObj.FullName]
-                $outputFile = Join-Path $mRoot $relativePath
+                $outputFile = Get-MirrorOutputPath -MirrorRoot $mRoot -RelativePath $relativePath
             } else {
                 # File input in Mirror mode acts like Cascade
-                $outputFile = $inputFile -replace '\.mp4$', '_kompressochan.mp4'
+                $outputFile = Get-CascadeOutputPath $inputFile
             }
         }
         else {
@@ -1321,7 +1361,18 @@ Start Time     :  $($now.ToString("yyyy-MM-dd HH:mm:ss"))
                 } elseif ($modeChoice -eq "3" -and $doSmart -and ($outputSize -ge $originalSize)) {
                     Write-Host "  Smart: Compressed file is larger or equal. Copying original instead." -ForegroundColor Yellow
                     Remove-Item -LiteralPath $outputFile -Force -ErrorAction SilentlyContinue
-                    Copy-Item -LiteralPath $inputFile -Destination $outputFile -Force
+                    $smartDest = $outputFile
+                    if ($rootObj.PSIsContainer) {
+                        $inputExt = $task.File.Extension.ToLower()
+                        if ($inputExt -ne '.mp4' -and $inputExt -ne '.m4v') {
+                            $smartDest = Join-Path $mirrorMap[$rootObj.FullName] $relativePath
+                        }
+                    }
+                    $smartDestDir = Split-Path -Parent $smartDest
+                    if ($smartDestDir -and -not (Test-Path -LiteralPath $smartDestDir)) {
+                        New-Item -ItemType Directory -Path $smartDestDir -Force | Out-Null
+                    }
+                    Copy-Item -LiteralPath $inputFile -Destination $smartDest -Force
                     $totalOutputBytes += $originalSize
                     $isSmartSkipped = $true
                 } else {
@@ -1330,7 +1381,8 @@ Start Time     :  $($now.ToString("yyyy-MM-dd HH:mm:ss"))
 
                 if ($modeChoice -eq "1" -and -not $isSmartSkipped) {
                     Remove-Item -LiteralPath $inputFile -Force -ErrorAction Stop
-                    Rename-Item -LiteralPath $outputFile -NewName $task.File.Name -ErrorAction Stop
+                    $finalName = Get-ReplaceOutputFinalName $inputFile
+                    Rename-Item -LiteralPath $outputFile -NewName $finalName -ErrorAction Stop
                 }
 
                 $ps.success++
