@@ -932,9 +932,9 @@ function Get-ItemsFromPath {
         if ($item.Extension -eq ".txt" -and -not $item.PSIsContainer) {
             $script:inputListPath = $item.FullName
             Write-Host "  Reading paths from list: $($item.Name)" -ForegroundColor Gray
-            $lines = Get-Content -LiteralPath $cleaned
+            $lines = Get-Content -LiteralPath $cleaned -Encoding utf8
             foreach ($line in $lines) {
-                $lineCleaned = $line.Trim().Trim('"').Trim("'")
+                $lineCleaned = $line.Trim().Trim('"').Trim("'") -replace '\p{C}+', ''
                 if ($lineCleaned -ne "") {
                     if (Test-Path -LiteralPath $lineCleaned) {
                         $results += Get-Item -LiteralPath $lineCleaned
@@ -1187,7 +1187,7 @@ Start Time     :  $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 
 if ($tasks.Count -eq 0) {
     Write-Host "  No supported video files found." -ForegroundColor Yellow
-    if ($sessionLogPath) { "No supported video files found." | Add-Content -LiteralPath $sessionLogPath }
+    if ($sessionLogPath) { "No supported video files found." | Add-Content -LiteralPath $sessionLogPath -Encoding utf8 }
     exit
 }
 
@@ -1206,14 +1206,14 @@ Total Videos : $totalFiles
     Write-Host "    Total Videos: $totalFiles`n"
     
     if ($sessionLogPath) { 
-        $formattedListSummary | Add-Content -LiteralPath $sessionLogPath 
+        $formattedListSummary | Add-Content -LiteralPath $sessionLogPath -Encoding utf8 
     }
 } else {
     Write-Host "  Total videos found: $totalFiles"
 }
 
 if ($sessionLogPath) {
-    "`n// timeline" | Add-Content -LiteralPath $sessionLogPath
+    "`n// timeline" | Add-Content -LiteralPath $sessionLogPath -Encoding utf8
 }
 
 $createFolderLogs = $logMode.Folder
@@ -1447,7 +1447,7 @@ Start Time     :  $($now.ToString("yyyy-MM-dd HH:mm:ss"))
         $logEntry = "$inputFile , $status, $sizeInfo , $timeStr"
         foreach ($lp in $allLogPaths) {
             if ($lp -eq $sessionLogPath -or $lp -eq $currentLogPath) {
-                $logEntry | Add-Content -LiteralPath $lp
+                $logEntry | Add-Content -LiteralPath $lp -Encoding utf8
             }
         }
 
@@ -1470,7 +1470,7 @@ Start Time     :  $($now.ToString("yyyy-MM-dd HH:mm:ss"))
         $logEntry = "$inputFile , Error, $errMsg"
         foreach ($lp in $allLogPaths) {
             if ($lp -eq $sessionLogPath -or $lp -eq $currentLogPath) {
-                $logEntry | Add-Content -LiteralPath $lp
+                $logEntry | Add-Content -LiteralPath $lp -Encoding utf8
             }
         }
     }
@@ -1549,7 +1549,7 @@ End Time     :  $($s_endTime.ToString("yyyy-MM-dd HH:mm:ss"))
         $s_text += "`nLast Undone Job (if exists) : $lastUndone"
     }
 
-    $s_text | Add-Content -LiteralPath $lp
+    $s_text | Add-Content -LiteralPath $lp -Encoding utf8
 }
 
 Write-Host "`n`n  SUMMARY"

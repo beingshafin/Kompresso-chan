@@ -28,9 +28,9 @@ $m = New-Object Threading.Mutex($false, 'KC_W')
 try {
     $m.WaitOne() | Out-Null
     if ((Test-Path $f) -and ((Get-Date) - (Get-Item $f).LastWriteTime).TotalSeconds -gt 5) {
-        [IO.File]::WriteAllText($f, $TargetPath + [Environment]::NewLine)
+        [IO.File]::WriteAllText($f, $TargetPath + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($true))
     } else {
-        [IO.File]::AppendAllText($f, $TargetPath + [Environment]::NewLine)
+        [IO.File]::AppendAllText($f, $TargetPath + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($true))
     }
 } finally {
     try {
